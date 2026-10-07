@@ -42,6 +42,15 @@ curl http://localhost:8080/entries
 curl http://localhost:8080/orders
 ```
 
+The OpenAPI modules are stitched into a validated, self-contained contract with:
+
+```sh
+make openapi
+```
+
+The command writes `dist/openapi.yaml` and rejects duplicate paths, operation IDs,
+and component names across modules.
+
 ## Schema workflow
 
 Edit schemas in `internal/ent/schema`, regenerate Ent code, and add matching up/down

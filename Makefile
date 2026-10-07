@@ -1,4 +1,4 @@
-.PHONY: db-up db-down generate hooks migrate-apply run test
+.PHONY: db-up db-down generate hooks migrate-apply openapi run test
 
 db-up:
 	docker compose up -d --wait postgres
@@ -14,6 +14,9 @@ hooks:
 
 migrate-apply:
 	go run ./cmd/market migrate
+
+openapi:
+	go run ./cmd/openapi-stitch
 
 run:
 	go run ./cmd/market serve
