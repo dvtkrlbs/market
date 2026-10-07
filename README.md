@@ -33,12 +33,13 @@ go run ./cmd/market list
 go run ./cmd/market serve
 ```
 
-The API listens on `http://localhost:8080` and implements the contract in
-`api/openapi.yaml`:
+The API listens on `http://localhost:8080` and implements the modular contracts
+under `api/`:
 
 ```sh
 curl http://localhost:8080/health
 curl http://localhost:8080/entries
+curl http://localhost:8080/orders
 ```
 
 ## Schema workflow
@@ -57,7 +58,7 @@ embedded into the application binary and applied with `market migrate`.
 
 ## Layout
 
-- `api/` — OpenAPI contract and oapi-codegen configuration
+- `api/` — OpenAPI contracts and per-module oapi-codegen configuration
 - `cmd/market/` — API server and bookkeeping CLI entrypoint
 - `internal/ent/` — Ent schema and generated database code
 - `internal/` — API, domain service, and database wiring

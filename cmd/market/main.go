@@ -14,7 +14,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	generated "github.com/dvtkrlbs/market/internal/api"
+	"github.com/dvtkrlbs/market/internal/api"
 	"github.com/dvtkrlbs/market/internal/bookkeeping"
 	"github.com/dvtkrlbs/market/internal/database"
 	"github.com/dvtkrlbs/market/internal/money"
@@ -69,8 +69,7 @@ func serve(service *bookkeeping.Service, args []string) error {
 		return err
 	}
 
-	strictHandler := generated.NewStrictHandler(generated.NewServer(service), nil)
-	handler := generated.Handler(strictHandler)
+	handler := api.NewRouter(service)
 	server := &http.Server{Addr: *addr, Handler: handler, ReadHeaderTimeout: 5 * time.Second}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()

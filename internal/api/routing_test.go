@@ -6,24 +6,10 @@ import (
 	"testing"
 )
 
-type routingServer struct{}
-
-func (routingServer) GetHealth(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-func (routingServer) ListEntries(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-func (routingServer) CreateEntry(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
 func TestHandlerRouting(t *testing.T) {
-	handler := Handler(routingServer{})
+	handler := NewRouter(nil)
 	if _, ok := handler.(*http.ServeMux); !ok {
-		t.Fatalf("Handler returned %T, want *http.ServeMux", handler)
+		t.Fatalf("NewRouter returned %T, want *http.ServeMux", handler)
 	}
 
 	tests := []struct {
@@ -31,12 +17,12 @@ func TestHandlerRouting(t *testing.T) {
 		path   string
 		status int
 	}{
-		{http.MethodGet, "/health", http.StatusNotImplemented},
-		{http.MethodHead, "/health", http.StatusNotImplemented},
-		{http.MethodGet, "/entries", http.StatusNotImplemented},
-		{http.MethodPost, "/entries", http.StatusNotImplemented},
+		{http.MethodGet, "/health", http.StatusOK},
+		{http.MethodHead, "/health", http.StatusOK},
+		{http.MethodGet, "/orders", http.StatusOK},
 		{http.MethodDelete, "/entries", http.StatusMethodNotAllowed},
 		{http.MethodPost, "/health", http.StatusMethodNotAllowed},
+		{http.MethodPost, "/orders", http.StatusMethodNotAllowed},
 		{http.MethodGet, "/missing", http.StatusNotFound},
 	}
 	for _, tt := range tests {
@@ -51,7 +37,7 @@ func TestHandlerRouting(t *testing.T) {
 }
 
 func TestHandlerHealth(t *testing.T) {
-	handler := Handler(NewStrictHandler(NewServer(nil), nil))
+	handler := NewRouter(nil)
 	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/health", nil))
 	if response.Code != http.StatusOK {
@@ -59,5 +45,17 @@ func TestHandlerHealth(t *testing.T) {
 	}
 	if got := response.Body.String(); got != "{\"status\":\"ok\"}\n" {
 		t.Fatalf("body = %q, want health JSON", got)
+	}
+}
+
+func TestHandlerOrdersPlaceholder(t *testing.T) {
+	handler := NewRouter(nil)
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/orders", nil))
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", response.Code, http.StatusOK)
+	}
+	if got := response.Body.String(); got != "{\"status\":\"placeholder\"}\n" {
+		t.Fatalf("body = %q, want placeholder JSON", got)
 	}
 }

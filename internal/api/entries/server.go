@@ -1,9 +1,10 @@
-package api
+package entries
 
 import (
 	"context"
 	"errors"
 
+	"github.com/dvtkrlbs/market/internal/api/common"
 	"github.com/dvtkrlbs/market/internal/bookkeeping"
 	"github.com/dvtkrlbs/market/internal/ent"
 )
@@ -18,18 +19,14 @@ func NewServer(service *bookkeeping.Service) *Server {
 	return &Server{bookkeeping: service}
 }
 
-func (s *Server) GetHealth(context.Context, GetHealthRequestObject) (GetHealthResponseObject, error) {
-	return GetHealth200JSONResponse{Status: "ok"}, nil
-}
-
 func (s *Server) ListEntries(ctx context.Context, _ ListEntriesRequestObject) (ListEntriesResponseObject, error) {
-	entries, err := s.bookkeeping.List(ctx)
+	items, err := s.bookkeeping.List(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	response := make(ListEntries200JSONResponse, 0, len(entries))
-	for _, item := range entries {
+	response := make(ListEntries200JSONResponse, 0, len(items))
+	for _, item := range items {
 		response = append(response, entryResponse(item))
 	}
 	return response, nil
@@ -37,7 +34,7 @@ func (s *Server) ListEntries(ctx context.Context, _ ListEntriesRequestObject) (L
 
 func (s *Server) CreateEntry(ctx context.Context, request CreateEntryRequestObject) (CreateEntryResponseObject, error) {
 	if request.Body == nil {
-		return CreateEntry400JSONResponse{Message: "request body is required"}, nil
+		return CreateEntry400JSONResponse(common.Error{Message: "request body is required"}), nil
 	}
 
 	created, err := s.bookkeeping.Create(ctx, bookkeeping.NewEntry{
@@ -47,7 +44,7 @@ func (s *Server) CreateEntry(ctx context.Context, request CreateEntryRequestObje
 	})
 	if err != nil {
 		if errors.Is(err, bookkeeping.ErrDescriptionRequired) {
-			return CreateEntry400JSONResponse{Message: err.Error()}, nil
+			return CreateEntry400JSONResponse(common.Error{Message: err.Error()}), nil
 		}
 		return nil, err
 	}

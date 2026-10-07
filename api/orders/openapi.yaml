@@ -1,0 +1,23 @@
+openapi: 3.0.3
+info:
+  title: Market orders API
+  version: 0.1.0
+paths:
+  /orders:
+    get:
+      operationId: getOrdersPlaceholder
+      responses:
+        "200":
+          description: Placeholder response for the future orders API
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrdersPlaceholder"
+components:
+  schemas:
+    OrdersPlaceholder:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string

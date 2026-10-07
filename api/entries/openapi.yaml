@@ -1,18 +1,8 @@
 openapi: 3.0.3
 info:
-  title: Market bookkeeping API
+  title: Market entries API
   version: 0.1.0
 paths:
-  /health:
-    get:
-      operationId: getHealth
-      responses:
-        "200":
-          description: Service is healthy
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Health"
   /entries:
     get:
       operationId: listEntries
@@ -45,15 +35,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: "../common/openapi.yaml#/components/schemas/Error"
 components:
   schemas:
-    Health:
-      type: object
-      required: [status]
-      properties:
-        status:
-          type: string
     Entry:
       type: object
       required: [id, description, amountCents, occurredAt, createdAt]
@@ -85,9 +69,3 @@ components:
         occurredAt:
           type: string
           format: date-time
-    Error:
-      type: object
-      required: [message]
-      properties:
-        message:
-          type: string
