@@ -38,9 +38,21 @@ under `api/`:
 
 ```sh
 curl http://localhost:8080/health
-curl http://localhost:8080/entries
-curl http://localhost:8080/orders
+curl -X POST http://localhost:8080/auth/register \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"person@example.com","password":"correct horse battery staple"}'
+curl -X POST http://localhost:8080/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"person@example.com","password":"correct horse battery staple"}'
+curl http://localhost:8080/auth/whoami -H "Authorization: Bearer $TOKEN"
+curl http://localhost:8080/entries -H "Authorization: Bearer $TOKEN"
+curl http://localhost:8080/orders -H "Authorization: Bearer $TOKEN"
 ```
+
+Login returns an opaque database-backed Bearer token. Sessions expire after 30
+days; `POST /auth/refresh` rotates the token and `POST /auth/logout` revokes it.
+Session IP metadata prefers `Forwarded` and `X-Forwarded-For`, so deployments
+must configure their reverse proxy to replace untrusted forwarding headers.
 
 The OpenAPI modules are stitched into a validated, self-contained contract with:
 

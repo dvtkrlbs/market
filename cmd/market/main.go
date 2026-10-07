@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/dvtkrlbs/market/internal/api"
+	"github.com/dvtkrlbs/market/internal/auth"
 	"github.com/dvtkrlbs/market/internal/bookkeeping"
 	"github.com/dvtkrlbs/market/internal/database"
 	"github.com/dvtkrlbs/market/internal/money"
@@ -49,10 +50,11 @@ func run(args []string) error {
 	}
 	defer client.Close()
 	service := bookkeeping.New(client)
+	authentication := auth.New(client)
 
 	switch args[0] {
 	case "serve":
-		return serve(service, args[1:])
+		return serve(service, authentication, args[1:])
 	case "add":
 		return add(service, args[1:])
 	case "list":
@@ -62,14 +64,17 @@ func run(args []string) error {
 	}
 }
 
-func serve(service *bookkeeping.Service, args []string) error {
+func serve(service *bookkeeping.Service, authentication *auth.Service, args []string) error {
 	flags := flag.NewFlagSet("serve", flag.ContinueOnError)
 	addr := flags.String("addr", envOr("HTTP_ADDR", ":8080"), "HTTP listen address")
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
 
-	handler := api.NewRouter(service)
+	handler, err := api.NewRouter(service, authentication)
+	if err != nil {
+		return err
+	}
 	server := &http.Server{Addr: *addr, Handler: handler, ReadHeaderTimeout: 5 * time.Second}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()

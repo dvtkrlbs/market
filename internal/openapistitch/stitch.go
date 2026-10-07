@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strings"
 
@@ -138,7 +139,7 @@ func mergeComponents(dst, src *openapi3.Components, owner string, owners map[str
 		},
 		func() error { return mergeComponentMap(dst.Responses, src.Responses, "responses", owner, owners) },
 		func() error {
-			return mergeComponentMap(dst.SecuritySchemes, src.SecuritySchemes, "securitySchemes", owner, owners)
+			return mergeSecuritySchemes(dst.SecuritySchemes, src.SecuritySchemes, owner, owners)
 		},
 		func() error { return mergeComponentMap(dst.Examples, src.Examples, "examples", owner, owners) },
 		func() error { return mergeComponentMap(dst.Links, src.Links, "links", owner, owners) },
@@ -147,6 +148,28 @@ func mergeComponents(dst, src *openapi3.Components, owner string, owners map[str
 		if err := merge(); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func mergeSecuritySchemes(dst, src openapi3.SecuritySchemes, owner string, owners map[string]string) error {
+	for name, value := range src {
+		key := "securitySchemes/" + name
+		if previous, exists := owners[key]; exists {
+			if reflect.DeepEqual(dst[name].Value, value.Value) {
+				// Prefer the component's concrete definition over an external
+				// reference to it. Keeping the reference would become a self-ref
+				// when InternalizeRefs runs on the stitched document.
+				if dst[name].Ref != "" && value.Ref == "" {
+					dst[name] = value
+					owners[key] = owner
+				}
+				continue
+			}
+			return fmt.Errorf("component collision %q between %s and %s", key, previous, owner)
+		}
+		dst[name] = value
+		owners[key] = owner
 	}
 	return nil
 }

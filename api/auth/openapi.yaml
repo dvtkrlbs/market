@@ -1,0 +1,155 @@
+openapi: 3.0.3
+info:
+  title: Market authentication API
+  version: 0.1.0
+paths:
+  /auth/register:
+    post:
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Credentials"
+      responses:
+        "201":
+          description: User registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          description: Email is already registered
+          content:
+            application/json:
+              schema:
+                $ref: "../common/openapi.yaml#/components/schemas/Error"
+  /auth/login:
+    post:
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Credentials"
+      responses:
+        "200":
+          description: Login succeeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionToken"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /auth/logout:
+    post:
+      operationId: logout
+      security:
+        - BearerAuth: []
+      responses:
+        "204":
+          description: Session revoked
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /auth/whoami:
+    get:
+      operationId: whoami
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Current user and session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Whoami"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /auth/refresh:
+    post:
+      operationId: refresh
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Rotated session token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionToken"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          description: Session was already refreshed
+          content:
+            application/json:
+              schema:
+                $ref: "../common/openapi.yaml#/components/schemas/Error"
+components:
+  securitySchemes:
+    BearerAuth:
+      $ref: "../common/openapi.yaml#/components/securitySchemes/BearerAuth"
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "../common/openapi.yaml#/components/schemas/Error"
+    Unauthorized:
+      description: Authentication failed
+      content:
+        application/json:
+          schema:
+            $ref: "../common/openapi.yaml#/components/schemas/Error"
+  schemas:
+    Credentials:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 320
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+    User:
+      type: object
+      required: [id, email, createdAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+          x-go-name: ID
+        email:
+          type: string
+          format: email
+        createdAt:
+          type: string
+          format: date-time
+    SessionToken:
+      type: object
+      required: [token, expiresAt]
+      properties:
+        token:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+    Whoami:
+      type: object
+      required: [user, sessionExpiresAt]
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        sessionExpiresAt:
+          type: string
+          format: date-time

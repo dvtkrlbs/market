@@ -7,6 +7,8 @@ import (
 
 	"github.com/dvtkrlbs/market/internal/ent/entry"
 	"github.com/dvtkrlbs/market/internal/ent/schema"
+	"github.com/dvtkrlbs/market/internal/ent/session"
+	"github.com/dvtkrlbs/market/internal/ent/user"
 )
 
 // The init function reads all schema descriptors with runtime code
@@ -23,4 +25,20 @@ func init() {
 	entryDescCreatedAt := entryFields[3].Descriptor()
 	// entry.DefaultCreatedAt holds the default value on creation for the created_at field.
 	entry.DefaultCreatedAt = entryDescCreatedAt.Default.(func() time.Time)
+	sessionFields := schema.Session{}.Fields()
+	_ = sessionFields
+	// sessionDescCreatedAt is the schema descriptor for created_at field.
+	sessionDescCreatedAt := sessionFields[5].Descriptor()
+	// session.DefaultCreatedAt holds the default value on creation for the created_at field.
+	session.DefaultCreatedAt = sessionDescCreatedAt.Default.(func() time.Time)
+	userFields := schema.User{}.Fields()
+	_ = userFields
+	// userDescEmail is the schema descriptor for email field.
+	userDescEmail := userFields[0].Descriptor()
+	// user.EmailValidator is a validator for the "email" field. It is called by the builders before save.
+	user.EmailValidator = userDescEmail.Validators[0].(func(string) error)
+	// userDescCreatedAt is the schema descriptor for created_at field.
+	userDescCreatedAt := userFields[2].Descriptor()
+	// user.DefaultCreatedAt holds the default value on creation for the created_at field.
+	user.DefaultCreatedAt = userDescCreatedAt.Default.(func() time.Time)
 }

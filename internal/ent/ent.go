@@ -13,6 +13,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/dvtkrlbs/market/internal/ent/entry"
+	"github.com/dvtkrlbs/market/internal/ent/session"
+	"github.com/dvtkrlbs/market/internal/ent/user"
 )
 
 // ent aliases to avoid import conflicts in user's code.
@@ -73,7 +75,9 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			entry.Table: entry.ValidColumn,
+			entry.Table:   entry.ValidColumn,
+			session.Table: session.ValidColumn,
+			user.Table:    user.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

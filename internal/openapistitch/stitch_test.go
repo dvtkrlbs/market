@@ -59,8 +59,8 @@ paths:
 	if strings.Contains(string(result), "../common/openapi.yaml") {
 		t.Fatalf("Build() left an external reference:\n%s", result)
 	}
-	if !strings.Contains(string(result), "paths:\n /entries:") {
-		t.Fatalf("Build() did not use one-space YAML indentation:\n%s", result)
+	if !strings.Contains(string(result), "paths:\n  /entries:") {
+		t.Fatalf("Build() did not use two-space YAML indentation:\n%s", result)
 	}
 
 	loader := openapi3.NewLoader()
@@ -188,6 +188,46 @@ components:
 	}
 	if !strings.Contains(err.Error(), "entries") || !strings.Contains(err.Error(), "orders") {
 		t.Fatalf("Build() error = %v, want both module names", err)
+	}
+}
+
+func TestBuildDeduplicatesSharedSecuritySchemes(t *testing.T) {
+	sourceDir := t.TempDir()
+	writeSpec(t, sourceDir, "common", `
+components:
+  securitySchemes:
+    BearerAuth: {type: http, scheme: bearer}
+`)
+	writeSpec(t, sourceDir, "auth", `
+openapi: 3.0.3
+info: {title: Auth, version: 0.1.0}
+paths:
+  /whoami:
+    get:
+      security: [{BearerAuth: []}]
+      responses:
+        "200": {description: Authenticated}
+components:
+  securitySchemes:
+    BearerAuth:
+      $ref: "../common/openapi.yaml#/components/securitySchemes/BearerAuth"
+`)
+
+	result, err := openapistitch.Build(context.Background(), openapistitch.Config{
+		SourceDir: sourceDir,
+		Title:     "Market API",
+		Version:   "0.1.0",
+	})
+	if err != nil {
+		t.Fatalf("Build() error = %v", err)
+	}
+	loader := openapi3.NewLoader()
+	doc, err := loader.LoadFromData(result)
+	if err != nil {
+		t.Fatalf("load result: %v", err)
+	}
+	if got := doc.Components.SecuritySchemes["BearerAuth"]; got == nil || got.Value == nil || got.Value.Scheme != "bearer" {
+		t.Fatalf("BearerAuth = %#v, want bearer scheme", got)
 	}
 }
 

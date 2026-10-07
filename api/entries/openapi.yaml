@@ -6,6 +6,8 @@ paths:
   /entries:
     get:
       operationId: listEntries
+      security:
+        - BearerAuth: []
       responses:
         "200":
           description: Entries, newest first
@@ -17,6 +19,8 @@ paths:
                   $ref: "#/components/schemas/Entry"
     post:
       operationId: createEntry
+      security:
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -37,6 +41,9 @@ paths:
               schema:
                 $ref: "../common/openapi.yaml#/components/schemas/Error"
 components:
+  securitySchemes:
+    BearerAuth:
+      $ref: "../common/openapi.yaml#/components/securitySchemes/BearerAuth"
   schemas:
     Entry:
       type: object

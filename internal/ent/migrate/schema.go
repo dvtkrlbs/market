@@ -22,11 +22,73 @@ var (
 		Columns:    EntriesColumns,
 		PrimaryKey: []*schema.Column{EntriesColumns[0]},
 	}
+	// SessionsColumns holds the columns for the "sessions" table.
+	SessionsColumns = []*schema.Column{
+		{Name: "session_id", Type: field.TypeString},
+		{Name: "session_secret", Type: field.TypeString},
+		{Name: "user_agent", Type: field.TypeString, Nullable: true},
+		{Name: "ip", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"postgres": "inet"}},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "revoked_at", Type: field.TypeTime, Nullable: true},
+		{Name: "expires_at", Type: field.TypeTime},
+		{Name: "superseded_by", Type: field.TypeString, Unique: true, Nullable: true},
+		{Name: "user_id", Type: field.TypeInt},
+	}
+	// SessionsTable holds the schema information for the "sessions" table.
+	SessionsTable = &schema.Table{
+		Name:       "sessions",
+		Columns:    SessionsColumns,
+		PrimaryKey: []*schema.Column{SessionsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "sessions_sessions_predecessor",
+				Columns:    []*schema.Column{SessionsColumns[7]},
+				RefColumns: []*schema.Column{SessionsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "sessions_users_sessions",
+				Columns:    []*schema.Column{SessionsColumns[8]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "session_user_id",
+				Unique:  false,
+				Columns: []*schema.Column{SessionsColumns[8]},
+			},
+			{
+				Name:    "session_expires_at",
+				Unique:  false,
+				Columns: []*schema.Column{SessionsColumns[6]},
+			},
+		},
+	}
+	// UsersColumns holds the columns for the "users" table.
+	UsersColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "email", Type: field.TypeString, Unique: true},
+		{Name: "password_hash", Type: field.TypeString},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+	}
+	// UsersTable holds the schema information for the "users" table.
+	UsersTable = &schema.Table{
+		Name:       "users",
+		Columns:    UsersColumns,
+		PrimaryKey: []*schema.Column{UsersColumns[0]},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		EntriesTable,
+		SessionsTable,
+		UsersTable,
 	}
 )
 
 func init() {
+	SessionsTable.ForeignKeys[0].RefTable = SessionsTable
+	SessionsTable.ForeignKeys[1].RefTable = UsersTable
 }
