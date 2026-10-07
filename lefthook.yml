@@ -1,0 +1,20 @@
+min_version: 2.2.0
+lefthook: go tool lefthook
+
+pre-commit:
+  jobs:
+    - name: gofmt
+      glob: "*.go"
+      run: gofmt -w -- {staged_files}
+      stage_fixed: true
+
+pre-push:
+  jobs:
+    - name: check gofmt
+      glob: "*.go"
+      run: |
+        unformatted="$(gofmt -l -- {all_files})"
+        if [ -n "$unformatted" ]; then
+          printf 'The following Go files are not formatted:\n%s\n' "$unformatted"
+          exit 1
+        fi
