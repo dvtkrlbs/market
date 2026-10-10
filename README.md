@@ -25,13 +25,23 @@ without modifying them.
 
 ## Start locally
 
+The backend's `.env.example` lists all settings. Copy it to `.env` if needed and
+fill `SESSION_SIGNING_KEY` with the output of `openssl rand -base64 32`.
+`.env` is ignored by Git; keep the signing key stable across restarts.
+`ENVIRONMENT` defaults to `DEVELOPMENT`. In that mode the backend automatically
+loads `.env` from the current working directory before reading configuration;
+existing process environment variables take precedence. A missing `.env` is
+allowed, while an unreadable or malformed file fails startup. Run from the
+repository root to use its `.env`. Export `ENVIRONMENT=PRODUCTION` (or another
+non-development value) to disable dotenv loading and provide settings through
+the process environment instead.
+
 ```sh
 make db-up
 make migrate-apply
 go run ./cmd/market add --description "Opening balance" --amount 100.00
 go run ./cmd/market add --description "Coffee" --amount -4.50
 go run ./cmd/market list
-export SESSION_SIGNING_KEY="$(openssl rand -base64 32)"
 go run ./cmd/market serve
 ```
 
@@ -61,6 +71,10 @@ The cookie is Secure on HTTPS
 requests. Sessions expire after 30 days; `POST /auth/refresh` extends the same
 session and cookie for another 30 days, and `POST /auth/logout` revokes it and
 clears the cookie. Protected routes do not accept Authorization headers.
+For direct browser API calls, set `CORS_ALLOWED_ORIGINS` to a comma-separated
+list of allowed frontend origins (for example `http://localhost:5176`). The
+server permits credentialed CORS and unauthenticated preflights only for these
+origins; cross-origin requests are denied by default. Do not use wildcards.
 Session IP metadata prefers `Forwarded` and `X-Forwarded-For`, so deployments
 must configure their reverse proxy to replace untrusted forwarding headers.
 
@@ -94,5 +108,5 @@ embedded into the application binary and applied with `market migrate`.
 - `internal/ent/` — Ent schema and generated database code
 - `internal/` — API, domain service, and database wiring
 - `migrations/` — embedded golang-migrate SQL migrations
-- `web/` — Vite+ workspace with the Orval-generated `client` API package (see
+- `web/` — Vite+ workspace with the `shared` theme and Orval API client package (see
   [web/README.md](web/README.md))

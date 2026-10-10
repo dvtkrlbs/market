@@ -1,7 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { AppTheme } from "theme";
-import "theme/styles.css";
+import { AppTheme } from "shared/theme";
+import "shared/styles.css";
 import App from "./App";
 
 const root = document.getElementById("root");

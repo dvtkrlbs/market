@@ -3,3 +3,6 @@
 !/dist/openapi.yaml
 !/dist/spec.go
 .DS_Store
+/.env
+/.env.*
+!/.env.example

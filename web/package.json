@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "generate": "vp run client#generate",
+    "generate": "vp run shared#generate",
     "build": "vp run -r build",
     "dev": "vp run --filter './apps/*' --parallel dev",
     "check": "vp check",
@@ -13,11 +13,14 @@
   },
   "devDependencies": {
     "@astryxdesign/build": "catalog:",
+    "@astryxdesign/core": "catalog:",
     "@babel/core": "catalog:",
     "@stylexjs/babel-plugin": "catalog:",
     "@stylexjs/unplugin": "catalog:",
+    "@testing-library/react": "catalog:",
     "@types/node": "catalog:",
     "@vitejs/plugin-react": "catalog:",
+    "jsdom": "catalog:",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
   },

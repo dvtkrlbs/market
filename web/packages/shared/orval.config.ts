@@ -10,7 +10,12 @@ export default defineConfig({
       client: "fetch",
       mode: "single",
       clean: true,
+      baseUrl: {
+        runtime: "getApiBaseUrl()",
+        imports: [{ name: "getApiBaseUrl", importPath: "../config" }],
+      },
       override: {
+        requestOptions: { credentials: "include" },
         fetch: {
           includeHttpResponseReturnType: true,
         },

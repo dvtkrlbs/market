@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import {
   createEntry,
@@ -10,10 +10,17 @@ import {
   refresh,
   register,
   whoami,
-} from "./index";
+} from "./api";
+
+const baseUrl = "http://localhost:8080";
+
+beforeEach(() => {
+  vi.stubEnv("VITE_API_BASE_URL", baseUrl);
+});
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
 });
 
 function mockFetch(response: Response) {
@@ -28,7 +35,10 @@ describe("generated Market client", () => {
 
     const result = await getHealth();
 
-    expect(fetch).toHaveBeenCalledExactlyOnceWith("/health", { method: "GET" });
+    expect(fetch).toHaveBeenCalledExactlyOnceWith(`${baseUrl}/health`, {
+      method: "GET",
+      credentials: "include",
+    });
     expect(result.status).toBe(200);
     expect(result.data).toEqual({ status: "ok" });
     expect(result.headers.get("content-type")).toContain("application/json");
@@ -45,7 +55,8 @@ describe("generated Market client", () => {
 
     const result = await login(credentials, { headers });
 
-    expect(fetch).toHaveBeenCalledExactlyOnceWith("/auth/login", {
+    expect(fetch).toHaveBeenCalledExactlyOnceWith(`${baseUrl}/auth/login`, {
+      credentials: "include",
       method: "POST",
       headers: { "Content-Type": "application/json", "x-request-id": "test-request" },
       body: JSON.stringify(credentials),
@@ -78,7 +89,7 @@ describe("generated Market client", () => {
 
     await operation(options);
 
-    expect(fetch).toHaveBeenCalledExactlyOnceWith(url, { ...options, method });
+    expect(fetch).toHaveBeenCalledExactlyOnceWith(`${baseUrl}${url}`, { ...options, method });
   });
 
   it("handles logout's empty 204 response", async () => {
@@ -87,7 +98,10 @@ describe("generated Market client", () => {
 
     const result = await logout(options);
 
-    expect(fetch).toHaveBeenCalledExactlyOnceWith("/auth/logout", { ...options, method: "POST" });
+    expect(fetch).toHaveBeenCalledExactlyOnceWith(`${baseUrl}/auth/logout`, {
+      ...options,
+      method: "POST",
+    });
     expect(result.status).toBe(204);
     expect(result.data).toBeUndefined();
   });
@@ -103,7 +117,8 @@ describe("generated Market client", () => {
 
     const result = await createEntry(entry);
 
-    expect(fetch).toHaveBeenCalledExactlyOnceWith("/entries", {
+    expect(fetch).toHaveBeenCalledExactlyOnceWith(`${baseUrl}/entries`, {
+      credentials: "include",
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(entry),
@@ -119,7 +134,8 @@ describe("generated Market client", () => {
 
     const result = await register(credentials);
 
-    expect(fetch).toHaveBeenCalledExactlyOnceWith("/auth/register", {
+    expect(fetch).toHaveBeenCalledExactlyOnceWith(`${baseUrl}/auth/register`, {
+      credentials: "include",
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(credentials),

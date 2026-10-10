@@ -4,6 +4,8 @@
  * Market API
  * OpenAPI spec version: 0.1.0
  */
+import { getApiBaseUrl } from "../config";
+
 export interface CreateEntry {
   amountCents: number;
   /** @minLength 1 */
@@ -91,7 +93,7 @@ export type loginResponseError = (loginResponse400 | loginResponse401) & {
 export type loginResponse = loginResponseSuccess | loginResponseError;
 
 export const getLoginUrl = () => {
-  return `/auth/login`;
+  return `${getApiBaseUrl()}/auth/login`;
 };
 
 export const login = async (
@@ -118,6 +120,7 @@ export const login = async (
     return headers;
   };
   const res = await fetch(getLoginUrl(), {
+    credentials: "include",
     ...options,
     method: "POST",
     headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
@@ -150,11 +153,12 @@ export type logoutResponseError = logoutResponse401 & {
 export type logoutResponse = logoutResponseSuccess | logoutResponseError;
 
 export const getLogoutUrl = () => {
-  return `/auth/logout`;
+  return `${getApiBaseUrl()}/auth/logout`;
 };
 
 export const logout = async (options?: RequestInit): Promise<logoutResponse> => {
   const res = await fetch(getLogoutUrl(), {
+    credentials: "include",
     ...options,
     method: "POST",
   });
@@ -185,11 +189,12 @@ export type refreshResponseError = refreshResponse401 & {
 export type refreshResponse = refreshResponseSuccess | refreshResponseError;
 
 export const getRefreshUrl = () => {
-  return `/auth/refresh`;
+  return `${getApiBaseUrl()}/auth/refresh`;
 };
 
 export const refresh = async (options?: RequestInit): Promise<refreshResponse> => {
   const res = await fetch(getRefreshUrl(), {
+    credentials: "include",
     ...options,
     method: "POST",
   });
@@ -225,7 +230,7 @@ export type registerResponseError = (registerResponse400 | registerResponse409) 
 export type registerResponse = registerResponseSuccess | registerResponseError;
 
 export const getRegisterUrl = () => {
-  return `/auth/register`;
+  return `${getApiBaseUrl()}/auth/register`;
 };
 
 export const register = async (
@@ -252,6 +257,7 @@ export const register = async (
     return headers;
   };
   const res = await fetch(getRegisterUrl(), {
+    credentials: "include",
     ...options,
     method: "POST",
     headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
@@ -284,11 +290,12 @@ export type whoamiResponseError = whoamiResponse401 & {
 export type whoamiResponse = whoamiResponseSuccess | whoamiResponseError;
 
 export const getWhoamiUrl = () => {
-  return `/auth/whoami`;
+  return `${getApiBaseUrl()}/auth/whoami`;
 };
 
 export const whoami = async (options?: RequestInit): Promise<whoamiResponse> => {
   const res = await fetch(getWhoamiUrl(), {
+    credentials: "include",
     ...options,
     method: "GET",
   });
@@ -311,11 +318,12 @@ export type listEntriesResponseSuccess = listEntriesResponse200 & {
 export type listEntriesResponse = listEntriesResponseSuccess;
 
 export const getListEntriesUrl = () => {
-  return `/entries`;
+  return `${getApiBaseUrl()}/entries`;
 };
 
 export const listEntries = async (options?: RequestInit): Promise<listEntriesResponse> => {
   const res = await fetch(getListEntriesUrl(), {
+    credentials: "include",
     ...options,
     method: "GET",
   });
@@ -346,7 +354,7 @@ export type createEntryResponseError = createEntryResponse400 & {
 export type createEntryResponse = createEntryResponseSuccess | createEntryResponseError;
 
 export const getCreateEntryUrl = () => {
-  return `/entries`;
+  return `${getApiBaseUrl()}/entries`;
 };
 
 export const createEntry = async (
@@ -373,6 +381,7 @@ export const createEntry = async (
     return headers;
   };
   const res = await fetch(getCreateEntryUrl(), {
+    credentials: "include",
     ...options,
     method: "POST",
     headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
@@ -397,11 +406,12 @@ export type getHealthResponseSuccess = getHealthResponse200 & {
 export type getHealthResponse = getHealthResponseSuccess;
 
 export const getGetHealthUrl = () => {
-  return `/health`;
+  return `${getApiBaseUrl()}/health`;
 };
 
 export const getHealth = async (options?: RequestInit): Promise<getHealthResponse> => {
   const res = await fetch(getGetHealthUrl(), {
+    credentials: "include",
     ...options,
     method: "GET",
   });
@@ -424,13 +434,14 @@ export type getOrdersPlaceholderResponseSuccess = getOrdersPlaceholderResponse20
 export type getOrdersPlaceholderResponse = getOrdersPlaceholderResponseSuccess;
 
 export const getGetOrdersPlaceholderUrl = () => {
-  return `/orders`;
+  return `${getApiBaseUrl()}/orders`;
 };
 
 export const getOrdersPlaceholder = async (
   options?: RequestInit,
 ): Promise<getOrdersPlaceholderResponse> => {
   const res = await fetch(getGetOrdersPlaceholderUrl(), {
+    credentials: "include",
     ...options,
     method: "GET",
   });

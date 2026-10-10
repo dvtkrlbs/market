@@ -38,6 +38,9 @@ func run(args []string) error {
 	if args[0] == "help" || args[0] == "-h" || args[0] == "--help" {
 		return usage()
 	}
+	if err := loadDevelopmentEnv(); err != nil {
+		return err
+	}
 	databaseURL := envOr("DATABASE_URL", defaultDatabaseURL)
 	if args[0] == "migrate" {
 		if len(args) != 1 {
@@ -81,6 +84,10 @@ func serve(service *bookkeeping.Service, authentication *auth.Service, args []st
 		return fmt.Errorf("SESSION_SIGNING_KEY: %w", err)
 	}
 	handler, err := api.NewRouter(service, authentication, signer)
+	if err != nil {
+		return err
+	}
+	handler, err = api.WithCORS(handler, strings.Split(os.Getenv("CORS_ALLOWED_ORIGINS"), ","))
 	if err != nil {
 		return err
 	}
@@ -156,9 +163,11 @@ Usage:
   market list
 
 Environment:
+  ENVIRONMENT   Runtime environment (default DEVELOPMENT); only DEVELOPMENT loads .env
   DATABASE_URL  PostgreSQL connection string
   HTTP_ADDR     Default server listen address
-  SESSION_SIGNING_KEY  Base64-encoded session cookie signing key (at least 32 bytes)`)
+  SESSION_SIGNING_KEY  Base64-encoded session cookie signing key (at least 32 bytes)
+  CORS_ALLOWED_ORIGINS  Comma-separated frontend origins allowed to send cookies`)
 	fmt.Fprintln(os.Stderr, message)
 	return nil
 }
