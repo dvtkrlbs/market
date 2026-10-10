@@ -1,13 +1,28 @@
 packages:
+  - apps/*
   - packages/*
 
 catalogMode: prefer
 
 allowBuilds:
+  "@astryxdesign/core": false # Its postinstall only prints a CLI setup reminder.
   esbuild: true
 
 catalog:
+  "@astryxdesign/build": 0.6.7
+  "@astryxdesign/core": 0.6.7
+  "@astryxdesign/theme-neutral": 0.6.7
+  "@babel/core": ^7.29.0
+  "@stylexjs/babel-plugin": ^0.19.1
+  "@stylexjs/stylex": ^0.19.1
+  "@stylexjs/unplugin": ^0.19.1
   "@types/node": ^24
+  "@types/react": ^19.3.0
+  "@types/react-dom": ^19.3.0
+  "@vitejs/plugin-react": ^5.2.0
+  orval: 8.41.0
+  react: ^19.3.0
+  react-dom: ^19.3.0
   typescript: ^7.0.2
   vite: npm:@voidzero-dev/vite-plus-core@1.1.0
   vite-plus: 1.1.0

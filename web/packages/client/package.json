@@ -19,6 +19,6 @@
     "check": "vp check"
   },
   "devDependencies": {
-    "orval": "8.41.0"
+    "orval": "catalog:"
   }
 }

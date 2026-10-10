@@ -1,0 +1,7 @@
+@layer reset, astryx-base, astryx-theme, product;
+
+@import "@astryxdesign/core/reset.css";
+@import "@astryxdesign/theme-neutral/theme.css";
+@import "@astryxdesign/theme-neutral/fonts.css";
+
+/* The Astryx Vite plugin compiles component styles into the astryx-base layer. */
