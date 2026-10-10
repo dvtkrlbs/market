@@ -1,0 +1,23 @@
+packages:
+  - packages/*
+
+catalogMode: prefer
+
+allowBuilds:
+  esbuild: true
+
+catalog:
+  "@types/node": ^24
+  typescript: ^7.0.2
+  vite: npm:@voidzero-dev/vite-plus-core@1.1.0
+  vite-plus: 1.1.0
+
+overrides:
+  vite@*: "catalog:"
+  vitest@*: 5.0.3
+
+peerDependencyRules:
+  allowAny:
+    - vite
+  allowedVersions:
+    vite: "*"

@@ -1,0 +1,7 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "declaration": true
+  },
+  "include": ["src", "orval.config.ts", "vite.config.ts"]
+}

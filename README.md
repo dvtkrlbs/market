@@ -86,4 +86,5 @@ embedded into the application binary and applied with `market migrate`.
 - `internal/ent/` — Ent schema and generated database code
 - `internal/` — API, domain service, and database wiring
 - `migrations/` — embedded golang-migrate SQL migrations
-- `web/` — placeholder for future API clients
+- `web/` — Vite+ workspace with the Orval-generated `client` API package (see
+  [web/README.md](web/README.md))
