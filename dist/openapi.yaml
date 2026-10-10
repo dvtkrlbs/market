@@ -1,6 +1,33 @@
 components:
   parameters:
+    ContextParam:
+      description: Shop lists approved global stores; manage lists stores administered by this user, including unapproved stores. Both exclude deleted stores. Admin lists stores administered by this user, including unapproved and deleted stores.
+      in: query
+      name: context
+      schema:
+        default: shop
+        enum:
+        - admin
+        - manage
+        - shop
+        type: string
+    StoreId:
+      description: Must match an existing store.
+      in: path
+      name: storeId
+      required: true
+      schema:
+        minimum: 1.0
+        type: integer
     StoreUserId:
+      description: Must match the authenticated user.
+      in: path
+      name: userId
+      required: true
+      schema:
+        minimum: 1.0
+        type: integer
+    UserId:
       description: Must match the authenticated user.
       in: path
       name: userId
@@ -46,22 +73,6 @@ components:
             $ref: "#/components/schemas/Error"
       description: Authentication failed
   schemas:
-    CreateEntry:
-      properties:
-        amountCents:
-          format: int64
-          type: integer
-        description:
-          minLength: 1
-          type: string
-        occurredAt:
-          format: date-time
-          type: string
-      required:
-      - description
-      - amountCents
-      - occurredAt
-      type: object
     CreateStore:
       additionalProperties: false
       properties:
@@ -85,29 +96,6 @@ components:
       - email
       - password
       type: object
-    Entry:
-      properties:
-        amountCents:
-          format: int64
-          type: integer
-        createdAt:
-          format: date-time
-          type: string
-        description:
-          type: string
-        id:
-          type: integer
-          x-go-name: ID
-        occurredAt:
-          format: date-time
-          type: string
-      required:
-      - id
-      - description
-      - amountCents
-      - occurredAt
-      - createdAt
-      type: object
     Error:
       properties:
         message:
@@ -122,12 +110,24 @@ components:
       required:
       - status
       type: object
-    OrdersPlaceholder:
+    Product:
       properties:
-        status:
+        barcode:
+          type: string
+        created_at:
+          format: date-time
+          type: string
+        deleted_at:
+          format: date-time
+          type: string
+        id:
+          type: integer
+          x-go-name: ID
+        name:
           type: string
       required:
-      - status
+      - id
+      - name
       type: object
     SessionExpiry:
       properties:
@@ -281,43 +281,6 @@ paths:
           $ref: "#/components/responses/Unauthorized"
       security:
       - SessionAuth: []
-  /entries:
-    get:
-      operationId: listEntries
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                items:
-                  $ref: "#/components/schemas/Entry"
-                type: array
-          description: Entries, newest first
-      security:
-      - SessionAuth: []
-    post:
-      operationId: createEntry
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateEntry"
-        required: true
-      responses:
-        "201":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Entry"
-          description: Entry created
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-          description: Invalid request
-      security:
-      - SessionAuth: []
   /health:
     get:
       operationId: getHealth
@@ -328,18 +291,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/Health"
           description: Service is healthy
-  /orders:
-    get:
-      operationId: getOrdersPlaceholder
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/OrdersPlaceholder"
-          description: Placeholder response for the future orders API
-      security:
-      - SessionAuth: []
   /stores/{storeId}/approve:
     parameters:
     - in: path
@@ -370,16 +321,7 @@ paths:
     get:
       operationId: listStores
       parameters:
-      - description: Shop lists approved global stores; manage lists stores administered by this user, including unapproved stores. Both exclude deleted stores. Admin lists stores administered by this user, including unapproved and deleted stores.
-        in: query
-        name: for
-        schema:
-          default: shop
-          enum:
-          - admin
-          - manage
-          - shop
-          type: string
+      - $ref: "#/components/parameters/ContextParam"
       responses:
         "200":
           content:
@@ -396,7 +338,7 @@ paths:
       security:
       - SessionAuth: []
     parameters:
-    - $ref: "#/components/parameters/StoreUserId"
+    - $ref: "#/components/parameters/UserId"
     post:
       description: Creates an unapproved global store and makes the requesting user its StoreAdmin.
       operationId: createStore
@@ -488,3 +430,22 @@ paths:
           $ref: "#/components/responses/StoreNotFound"
       security:
       - SessionAuth: []
+  /users/{userId}/stores/{storeId}/products:
+    get:
+      operationId: listProducts
+      parameters:
+      - $ref: "#/components/parameters/ContextParam"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/Product"
+                type: array
+          description: Products of store
+      security:
+      - SessionAuth: []
+    parameters:
+    - $ref: "#/components/parameters/UserId"
+    - $ref: "#/components/parameters/StoreId"

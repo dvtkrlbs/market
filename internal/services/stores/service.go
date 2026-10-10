@@ -41,7 +41,6 @@ func (s *Service) List(ctx context.Context, userID int, mode string) ([]*ent.Sto
 	case "manage":
 		query.Where(store.DeletedAtIsNil(), administeredBy(userID))
 	case "admin":
-		query.Where(administeredBy(userID))
 	default:
 		return nil, ErrInvalidMode
 	}

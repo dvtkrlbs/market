@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/dvtkrlbs/market/internal/auth"
 	"github.com/dvtkrlbs/market/internal/ent"
+	"github.com/dvtkrlbs/market/internal/services/auth"
 )
 
 type stubAdminChecker struct {

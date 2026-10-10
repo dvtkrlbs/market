@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/dvtkrlbs/market/internal/api/common"
-	authservice "github.com/dvtkrlbs/market/internal/auth"
 	"github.com/dvtkrlbs/market/internal/ent"
+	authservice "github.com/dvtkrlbs/market/internal/services/auth"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 

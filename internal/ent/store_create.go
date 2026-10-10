@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/dvtkrlbs/market/internal/ent/product"
 	"github.com/dvtkrlbs/market/internal/ent/store"
 	"github.com/dvtkrlbs/market/internal/ent/storeadmin"
 )
@@ -68,6 +69,21 @@ func (_c *StoreCreate) AddAdmins(v ...*StoreAdmin) *StoreCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddAdminIDs(ids...)
+}
+
+// AddProductIDs adds the "products" edge to the Product entity by IDs.
+func (_c *StoreCreate) AddProductIDs(ids ...int) *StoreCreate {
+	_c.mutation.AddProductIDs(ids...)
+	return _c
+}
+
+// AddProducts adds the "products" edges to the Product entity.
+func (_c *StoreCreate) AddProducts(v ...*Product) *StoreCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddProductIDs(ids...)
 }
 
 // Mutation returns the StoreMutation object of the builder.
@@ -171,6 +187,22 @@ func (_c *StoreCreate) createSpec() (*Store, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(storeadmin.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ProductsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   store.ProductsTable,
+			Columns: []string{store.ProductsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(product.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

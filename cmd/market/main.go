@@ -12,15 +12,15 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
-	"text/tabwriter"
 	"time"
 
 	"github.com/dvtkrlbs/market/internal/api"
-	"github.com/dvtkrlbs/market/internal/auth"
-	"github.com/dvtkrlbs/market/internal/bookkeeping"
 	"github.com/dvtkrlbs/market/internal/database"
-	"github.com/dvtkrlbs/market/internal/money"
-	"github.com/dvtkrlbs/market/internal/stores"
+	"github.com/dvtkrlbs/market/internal/services/auth"
+	authservice "github.com/dvtkrlbs/market/internal/services/auth"
+	productsservice "github.com/dvtkrlbs/market/internal/services/products"
+	"github.com/dvtkrlbs/market/internal/services/stores"
+	storesservice "github.com/dvtkrlbs/market/internal/services/stores"
 )
 
 const defaultDatabaseURL = "postgres://market:market@localhost:5432/market?sslmode=disable"
@@ -54,22 +54,16 @@ func run(args []string) error {
 		return err
 	}
 	defer client.Close()
-	service := bookkeeping.New(client)
-	authentication := auth.New(client)
 
 	switch args[0] {
 	case "serve":
-		return serve(service, authentication, stores.New(client), args[1:])
-	case "add":
-		return add(service, args[1:])
-	case "list":
-		return list(service, args[1:])
+		return serve(authservice.New(client), productsservice.New(client), stores.New(client), args[1:])
 	default:
 		return fmt.Errorf("unknown command %q\n\n%w", args[0], usage())
 	}
 }
 
-func serve(service *bookkeeping.Service, authentication *auth.Service, storeService *stores.Service, args []string) error {
+func serve(authentication *authservice.Service, productService *productsservice.Service, storeService *storesservice.Service, args []string) error {
 	flags := flag.NewFlagSet("serve", flag.ContinueOnError)
 	addr := flags.String("addr", envOr("HTTP_ADDR", ":8080"), "HTTP listen address")
 	if err := flags.Parse(args); err != nil {
@@ -84,7 +78,7 @@ func serve(service *bookkeeping.Service, authentication *auth.Service, storeServ
 	if err != nil {
 		return fmt.Errorf("SESSION_SIGNING_KEY: %w", err)
 	}
-	handler, err := api.NewRouter(service, authentication, signer, storeService)
+	handler, err := api.NewRouter(authentication, productService, signer, storeService)
 	if err != nil {
 		return err
 	}
@@ -109,59 +103,12 @@ func serve(service *bookkeeping.Service, authentication *auth.Service, storeServ
 	return nil
 }
 
-func add(service *bookkeeping.Service, args []string) error {
-	flags := flag.NewFlagSet("add", flag.ContinueOnError)
-	description := flags.String("description", "", "entry description")
-	amountText := flags.String("amount", "", "decimal amount; income positive, expense negative")
-	dateText := flags.String("date", time.Now().Format(time.DateOnly), "entry date (YYYY-MM-DD)")
-	if err := flags.Parse(args); err != nil {
-		return err
-	}
-	amount, err := money.Parse(*amountText)
-	if err != nil {
-		return err
-	}
-	date, err := time.Parse(time.DateOnly, *dateText)
-	if err != nil {
-		return fmt.Errorf("invalid date: use YYYY-MM-DD")
-	}
-	created, err := service.Create(context.Background(), bookkeeping.NewEntry{
-		Description: *description,
-		AmountCents: amount,
-		OccurredAt:  date,
-	})
-	if err != nil {
-		return err
-	}
-	fmt.Printf("added #%d %s %s\n", created.ID, money.Format(created.AmountCents), created.Description)
-	return nil
-}
-
-func list(service *bookkeeping.Service, args []string) error {
-	flags := flag.NewFlagSet("list", flag.ContinueOnError)
-	if err := flags.Parse(args); err != nil {
-		return err
-	}
-	entries, err := service.List(context.Background())
-	if err != nil {
-		return err
-	}
-	w := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-	fmt.Fprintln(w, "ID\tDATE\tAMOUNT\tDESCRIPTION")
-	for _, item := range entries {
-		fmt.Fprintf(w, "%d\t%s\t%s\t%s\n", item.ID, item.OccurredAt.Format(time.DateOnly), money.Format(item.AmountCents), item.Description)
-	}
-	return w.Flush()
-}
-
 func usage() error {
 	message := strings.TrimSpace(`market - small bookkeeping application
 
 Usage:
   market migrate
   market serve [--addr :8080]
-  market add --description TEXT --amount DECIMAL [--date YYYY-MM-DD]
-  market list
 
 Environment:
   ENVIRONMENT   Runtime environment (default DEVELOPMENT); only DEVELOPMENT loads .env

@@ -8,30 +8,30 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/dvtkrlbs/market/internal/ent/entry"
 	"github.com/dvtkrlbs/market/internal/ent/predicate"
+	"github.com/dvtkrlbs/market/internal/ent/product"
 )
 
-// EntryDelete is the builder for deleting a Entry entity.
-type EntryDelete struct {
+// ProductDelete is the builder for deleting a Product entity.
+type ProductDelete struct {
 	config
 	hooks    []Hook
-	mutation *EntryMutation
+	mutation *ProductMutation
 }
 
-// Where appends a list predicates to the EntryDelete builder.
-func (_d *EntryDelete) Where(ps ...predicate.Entry) *EntryDelete {
+// Where appends a list predicates to the ProductDelete builder.
+func (_d *ProductDelete) Where(ps ...predicate.Product) *ProductDelete {
 	_d.mutation.Where(ps...)
 	return _d
 }
 
 // Exec executes the deletion query and returns how many vertices were deleted.
-func (_d *EntryDelete) Exec(ctx context.Context) (int, error) {
+func (_d *ProductDelete) Exec(ctx context.Context) (int, error) {
 	return withHooks(ctx, _d.sqlExec, _d.mutation, _d.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_d *EntryDelete) ExecX(ctx context.Context) int {
+func (_d *ProductDelete) ExecX(ctx context.Context) int {
 	n, err := _d.Exec(ctx)
 	if err != nil {
 		panic(err)
@@ -39,8 +39,8 @@ func (_d *EntryDelete) ExecX(ctx context.Context) int {
 	return n
 }
 
-func (_d *EntryDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(entry.Table, sqlgraph.NewFieldSpec(entry.FieldID, field.TypeInt))
+func (_d *ProductDelete) sqlExec(ctx context.Context) (int, error) {
+	_spec := sqlgraph.NewDeleteSpec(product.Table, sqlgraph.NewFieldSpec(product.FieldID, field.TypeInt))
 	if ps := _d.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -56,32 +56,32 @@ func (_d *EntryDelete) sqlExec(ctx context.Context) (int, error) {
 	return affected, err
 }
 
-// EntryDeleteOne is the builder for deleting a single Entry entity.
-type EntryDeleteOne struct {
-	_d *EntryDelete
+// ProductDeleteOne is the builder for deleting a single Product entity.
+type ProductDeleteOne struct {
+	_d *ProductDelete
 }
 
-// Where appends a list predicates to the EntryDelete builder.
-func (_d *EntryDeleteOne) Where(ps ...predicate.Entry) *EntryDeleteOne {
+// Where appends a list predicates to the ProductDelete builder.
+func (_d *ProductDeleteOne) Where(ps ...predicate.Product) *ProductDeleteOne {
 	_d._d.mutation.Where(ps...)
 	return _d
 }
 
 // Exec executes the deletion query.
-func (_d *EntryDeleteOne) Exec(ctx context.Context) error {
+func (_d *ProductDeleteOne) Exec(ctx context.Context) error {
 	n, err := _d._d.Exec(ctx)
 	switch {
 	case err != nil:
 		return err
 	case n == 0:
-		return &NotFoundError{entry.Label}
+		return &NotFoundError{product.Label}
 	default:
 		return nil
 	}
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (_d *EntryDeleteOne) ExecX(ctx context.Context) {
+func (_d *ProductDeleteOne) ExecX(ctx context.Context) {
 	if err := _d.Exec(ctx); err != nil {
 		panic(err)
 	}

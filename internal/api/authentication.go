@@ -8,7 +8,7 @@ import (
 	"net/http"
 
 	"github.com/dvtkrlbs/market/internal/api/common"
-	authservice "github.com/dvtkrlbs/market/internal/auth"
+	authservice "github.com/dvtkrlbs/market/internal/services/auth"
 	"github.com/getkin/kin-openapi/openapi3filter"
 	nethttpmiddleware "github.com/oapi-codegen/nethttp-middleware"
 )

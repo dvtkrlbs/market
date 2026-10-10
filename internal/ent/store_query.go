@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/dvtkrlbs/market/internal/ent/predicate"
+	"github.com/dvtkrlbs/market/internal/ent/product"
 	"github.com/dvtkrlbs/market/internal/ent/store"
 	"github.com/dvtkrlbs/market/internal/ent/storeadmin"
 )
@@ -20,11 +21,12 @@ import (
 // StoreQuery is the builder for querying Store entities.
 type StoreQuery struct {
 	config
-	ctx        *QueryContext
-	order      []store.OrderOption
-	inters     []Interceptor
-	predicates []predicate.Store
-	withAdmins *StoreAdminQuery
+	ctx          *QueryContext
+	order        []store.OrderOption
+	inters       []Interceptor
+	predicates   []predicate.Store
+	withAdmins   *StoreAdminQuery
+	withProducts *ProductQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -76,6 +78,28 @@ func (_q *StoreQuery) QueryAdmins() *StoreAdminQuery {
 			sqlgraph.From(store.Table, store.FieldID, selector),
 			sqlgraph.To(storeadmin.Table, storeadmin.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, store.AdminsTable, store.AdminsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryProducts chains the current query on the "products" edge.
+func (_q *StoreQuery) QueryProducts() *ProductQuery {
+	query := (&ProductClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(store.Table, store.FieldID, selector),
+			sqlgraph.To(product.Table, product.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, store.ProductsTable, store.ProductsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -270,12 +294,13 @@ func (_q *StoreQuery) Clone() *StoreQuery {
 		return nil
 	}
 	return &StoreQuery{
-		config:     _q.config,
-		ctx:        _q.ctx.Clone(),
-		order:      append([]store.OrderOption{}, _q.order...),
-		inters:     append([]Interceptor{}, _q.inters...),
-		predicates: append([]predicate.Store{}, _q.predicates...),
-		withAdmins: _q.withAdmins.Clone(),
+		config:       _q.config,
+		ctx:          _q.ctx.Clone(),
+		order:        append([]store.OrderOption{}, _q.order...),
+		inters:       append([]Interceptor{}, _q.inters...),
+		predicates:   append([]predicate.Store{}, _q.predicates...),
+		withAdmins:   _q.withAdmins.Clone(),
+		withProducts: _q.withProducts.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -290,6 +315,17 @@ func (_q *StoreQuery) WithAdmins(opts ...func(*StoreAdminQuery)) *StoreQuery {
 		opt(query)
 	}
 	_q.withAdmins = query
+	return _q
+}
+
+// WithProducts tells the query-builder to eager-load the nodes that are connected to
+// the "products" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *StoreQuery) WithProducts(opts ...func(*ProductQuery)) *StoreQuery {
+	query := (&ProductClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withProducts = query
 	return _q
 }
 
@@ -371,8 +407,9 @@ func (_q *StoreQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Store,
 	var (
 		nodes       = []*Store{}
 		_spec       = _q.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			_q.withAdmins != nil,
+			_q.withProducts != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -400,6 +437,13 @@ func (_q *StoreQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Store,
 			return nil, err
 		}
 	}
+	if query := _q.withProducts; query != nil {
+		if err := _q.loadProducts(ctx, query, nodes,
+			func(n *Store) { n.Edges.Products = []*Product{} },
+			func(n *Store, e *Product) { n.Edges.Products = append(n.Edges.Products, e) }); err != nil {
+			return nil, err
+		}
+	}
 	return nodes, nil
 }
 
@@ -418,6 +462,36 @@ func (_q *StoreQuery) loadAdmins(ctx context.Context, query *StoreAdminQuery, no
 	}
 	query.Where(predicate.StoreAdmin(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(store.AdminsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.StoreID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "store_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *StoreQuery) loadProducts(ctx context.Context, query *ProductQuery, nodes []*Store, init func(*Store), assign func(*Store, *Product)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Store)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(product.FieldStoreID)
+	}
+	query.Where(predicate.Product(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(store.ProductsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

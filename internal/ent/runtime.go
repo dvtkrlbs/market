@@ -5,7 +5,7 @@ package ent
 import (
 	"time"
 
-	"github.com/dvtkrlbs/market/internal/ent/entry"
+	"github.com/dvtkrlbs/market/internal/ent/product"
 	"github.com/dvtkrlbs/market/internal/ent/schema"
 	"github.com/dvtkrlbs/market/internal/ent/session"
 	"github.com/dvtkrlbs/market/internal/ent/store"
@@ -16,16 +16,20 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
-	entryFields := schema.Entry{}.Fields()
-	_ = entryFields
-	// entryDescDescription is the schema descriptor for description field.
-	entryDescDescription := entryFields[0].Descriptor()
-	// entry.DescriptionValidator is a validator for the "description" field. It is called by the builders before save.
-	entry.DescriptionValidator = entryDescDescription.Validators[0].(func(string) error)
-	// entryDescCreatedAt is the schema descriptor for created_at field.
-	entryDescCreatedAt := entryFields[3].Descriptor()
-	// entry.DefaultCreatedAt holds the default value on creation for the created_at field.
-	entry.DefaultCreatedAt = entryDescCreatedAt.Default.(func() time.Time)
+	productFields := schema.Product{}.Fields()
+	_ = productFields
+	// productDescBarcode is the schema descriptor for barcode field.
+	productDescBarcode := productFields[0].Descriptor()
+	// product.BarcodeValidator is a validator for the "barcode" field. It is called by the builders before save.
+	product.BarcodeValidator = productDescBarcode.Validators[0].(func(string) error)
+	// productDescName is the schema descriptor for name field.
+	productDescName := productFields[1].Descriptor()
+	// product.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	product.NameValidator = productDescName.Validators[0].(func(string) error)
+	// productDescCreatedAt is the schema descriptor for created_at field.
+	productDescCreatedAt := productFields[2].Descriptor()
+	// product.DefaultCreatedAt holds the default value on creation for the created_at field.
+	product.DefaultCreatedAt = productDescCreatedAt.Default.(func() time.Time)
 	sessionFields := schema.Session{}.Fields()
 	_ = sessionFields
 	// sessionDescCreatedAt is the schema descriptor for created_at field.

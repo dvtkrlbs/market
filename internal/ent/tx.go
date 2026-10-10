@@ -14,8 +14,8 @@ type Tx struct {
 	config
 	// Admin is the client for interacting with the Admin builders.
 	Admin *AdminClient
-	// Entry is the client for interacting with the Entry builders.
-	Entry *EntryClient
+	// Product is the client for interacting with the Product builders.
+	Product *ProductClient
 	// Session is the client for interacting with the Session builders.
 	Session *SessionClient
 	// Store is the client for interacting with the Store builders.
@@ -156,7 +156,7 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.Admin = NewAdminClient(tx.config)
-	tx.Entry = NewEntryClient(tx.config)
+	tx.Product = NewProductClient(tx.config)
 	tx.Session = NewSessionClient(tx.config)
 	tx.Store = NewStoreClient(tx.config)
 	tx.StoreAdmin = NewStoreAdminClient(tx.config)

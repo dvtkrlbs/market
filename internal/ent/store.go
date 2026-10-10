@@ -33,9 +33,11 @@ type Store struct {
 type StoreEdges struct {
 	// Admins holds the value of the admins edge.
 	Admins []*StoreAdmin `json:"admins,omitempty"`
+	// Products holds the value of the products edge.
+	Products []*Product `json:"products,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // AdminsOrErr returns the Admins value or an error if the edge
@@ -45,6 +47,15 @@ func (e StoreEdges) AdminsOrErr() ([]*StoreAdmin, error) {
 		return e.Admins, nil
 	}
 	return nil, &NotLoadedError{edge: "admins"}
+}
+
+// ProductsOrErr returns the Products value or an error if the edge
+// was not loaded in eager-loading.
+func (e StoreEdges) ProductsOrErr() ([]*Product, error) {
+	if e.loadedTypes[1] {
+		return e.Products, nil
+	}
+	return nil, &NotLoadedError{edge: "products"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -116,6 +127,11 @@ func (_m *Store) Value(name string) (ent.Value, error) {
 // QueryAdmins queries the "admins" edge of the Store entity.
 func (_m *Store) QueryAdmins() *StoreAdminQuery {
 	return NewStoreClient(_m.config).QueryAdmins(_m)
+}
+
+// QueryProducts queries the "products" edge of the Store entity.
+func (_m *Store) QueryProducts() *ProductQuery {
+	return NewStoreClient(_m.config).QueryProducts(_m)
 }
 
 // Update returns a builder for updating this Store.

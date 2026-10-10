@@ -6,13 +6,6 @@
  */
 import { getApiBaseUrl } from "../config";
 
-export interface CreateEntry {
-  amountCents: number;
-  /** @minLength 1 */
-  description: string;
-  occurredAt: string;
-}
-
 export interface CreateStore {
   /** @minLength 1 */
   name: string;
@@ -28,14 +21,6 @@ export interface Credentials {
   password: string;
 }
 
-export interface Entry {
-  amountCents: number;
-  createdAt: string;
-  description: string;
-  id: number;
-  occurredAt: string;
-}
-
 export interface Error {
   message: string;
 }
@@ -44,8 +29,12 @@ export interface Health {
   status: string;
 }
 
-export interface OrdersPlaceholder {
-  status: string;
+export interface Product {
+  barcode?: string;
+  created_at?: string;
+  deleted_at?: string;
+  id: number;
+  name: string;
 }
 
 export interface SessionExpiry {
@@ -105,20 +94,28 @@ export type StoreUnauthorizedResponse = Error;
  */
 export type UnauthorizedResponse = Error;
 
-export type ListStoresParams = {
-  /**
-   * Shop lists approved global stores; manage lists stores administered by this user, including unapproved stores. Both exclude deleted stores. Admin lists stores administered by this user, including unapproved and deleted stores.
-   */
-  for?: ListStoresFor;
-};
+export type ContextParamParameter =
+  (typeof ContextParamParameter)[keyof typeof ContextParamParameter];
 
-export type ListStoresFor = (typeof ListStoresFor)[keyof typeof ListStoresFor];
-
-export const ListStoresFor = {
+export const ContextParamParameter = {
   admin: "admin",
   manage: "manage",
   shop: "shop",
 } as const;
+
+export type ListStoresParams = {
+  /**
+   * Shop lists approved global stores; manage lists stores administered by this user, including unapproved stores. Both exclude deleted stores. Admin lists stores administered by this user, including unapproved and deleted stores.
+   */
+  context?: ContextParamParameter;
+};
+
+export type ListProductsParams = {
+  /**
+   * Shop lists approved global stores; manage lists stores administered by this user, including unapproved stores. Both exclude deleted stores. Admin lists stores administered by this user, including unapproved and deleted stores.
+   */
+  context?: ContextParamParameter;
+};
 
 export type loginResponse200 = {
   data: SessionExpiry;
@@ -358,94 +355,6 @@ export const whoami = async (options?: RequestInit): Promise<whoamiResponse> => 
   return { data, status: res.status, headers: res.headers } as whoamiResponse;
 };
 
-export type listEntriesResponse200 = {
-  data: Entry[];
-  status: 200;
-};
-
-export type listEntriesResponseSuccess = listEntriesResponse200 & {
-  headers: Headers;
-};
-
-export type listEntriesResponse = listEntriesResponseSuccess;
-
-export const getListEntriesUrl = () => {
-  return `${getApiBaseUrl()}/entries`;
-};
-
-export const listEntries = async (options?: RequestInit): Promise<listEntriesResponse> => {
-  const res = await fetch(getListEntriesUrl(), {
-    credentials: "include",
-    ...options,
-    method: "GET",
-  });
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: listEntriesResponse["data"] = body ? JSON.parse(body) : {};
-  return { data, status: res.status, headers: res.headers } as listEntriesResponse;
-};
-
-export type createEntryResponse201 = {
-  data: Entry;
-  status: 201;
-};
-
-export type createEntryResponse400 = {
-  data: Error;
-  status: 400;
-};
-
-export type createEntryResponseSuccess = createEntryResponse201 & {
-  headers: Headers;
-};
-export type createEntryResponseError = createEntryResponse400 & {
-  headers: Headers;
-};
-
-export type createEntryResponse = createEntryResponseSuccess | createEntryResponseError;
-
-export const getCreateEntryUrl = () => {
-  return `${getApiBaseUrl()}/entries`;
-};
-
-export const createEntry = async (
-  createEntryBody: CreateEntry,
-  options?: RequestInit,
-): Promise<createEntryResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-  const res = await fetch(getCreateEntryUrl(), {
-    credentials: "include",
-    ...options,
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
-    body: JSON.stringify(createEntryBody),
-  });
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: createEntryResponse["data"] = body ? JSON.parse(body) : {};
-  return { data, status: res.status, headers: res.headers } as createEntryResponse;
-};
-
 export type getHealthResponse200 = {
   data: Health;
   status: 200;
@@ -472,36 +381,6 @@ export const getHealth = async (options?: RequestInit): Promise<getHealthRespons
 
   const data: getHealthResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as getHealthResponse;
-};
-
-export type getOrdersPlaceholderResponse200 = {
-  data: OrdersPlaceholder;
-  status: 200;
-};
-
-export type getOrdersPlaceholderResponseSuccess = getOrdersPlaceholderResponse200 & {
-  headers: Headers;
-};
-
-export type getOrdersPlaceholderResponse = getOrdersPlaceholderResponseSuccess;
-
-export const getGetOrdersPlaceholderUrl = () => {
-  return `${getApiBaseUrl()}/orders`;
-};
-
-export const getOrdersPlaceholder = async (
-  options?: RequestInit,
-): Promise<getOrdersPlaceholderResponse> => {
-  const res = await fetch(getGetOrdersPlaceholderUrl(), {
-    credentials: "include",
-    ...options,
-    method: "GET",
-  });
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: getOrdersPlaceholderResponse["data"] = body ? JSON.parse(body) : {};
-  return { data, status: res.status, headers: res.headers } as getOrdersPlaceholderResponse;
 };
 
 export type approveStoreResponse200 = {
@@ -892,4 +771,53 @@ export const updateStore = async (
 
   const data: updateStoreResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as updateStoreResponse;
+};
+
+export type listProductsResponse200 = {
+  data: Product[];
+  status: 200;
+};
+
+export type listProductsResponseSuccess = listProductsResponse200 & {
+  headers: Headers;
+};
+
+export type listProductsResponse = listProductsResponseSuccess;
+
+export const getListProductsUrl = (
+  userId: number,
+  storeId: number,
+  params?: ListProductsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `${getApiBaseUrl()}/users/${userId}/stores/${storeId}/products?${stringifiedParams}`
+    : `${getApiBaseUrl()}/users/${userId}/stores/${storeId}/products`;
+};
+
+export const listProducts = async (
+  userId: number,
+  storeId: number,
+  params?: ListProductsParams,
+  options?: RequestInit,
+): Promise<listProductsResponse> => {
+  const res = await fetch(getListProductsUrl(userId, storeId, params), {
+    credentials: "include",
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listProductsResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as listProductsResponse;
 };

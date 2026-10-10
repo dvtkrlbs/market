@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/dvtkrlbs/market/internal/ent/predicate"
+	"github.com/dvtkrlbs/market/internal/ent/product"
 	"github.com/dvtkrlbs/market/internal/ent/store"
 	"github.com/dvtkrlbs/market/internal/ent/storeadmin"
 )
@@ -92,6 +93,21 @@ func (_u *StoreUpdate) AddAdmins(v ...*StoreAdmin) *StoreUpdate {
 	return _u.AddAdminIDs(ids...)
 }
 
+// AddProductIDs adds the "products" edge to the Product entity by IDs.
+func (_u *StoreUpdate) AddProductIDs(ids ...int) *StoreUpdate {
+	_u.mutation.AddProductIDs(ids...)
+	return _u
+}
+
+// AddProducts adds the "products" edges to the Product entity.
+func (_u *StoreUpdate) AddProducts(v ...*Product) *StoreUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddProductIDs(ids...)
+}
+
 // Mutation returns the StoreMutation object of the builder.
 func (_u *StoreUpdate) Mutation() *StoreMutation {
 	return _u.mutation
@@ -116,6 +132,27 @@ func (_u *StoreUpdate) RemoveAdmins(v ...*StoreAdmin) *StoreUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveAdminIDs(ids...)
+}
+
+// ClearProducts clears all "products" edges to the Product entity.
+func (_u *StoreUpdate) ClearProducts() *StoreUpdate {
+	_u.mutation.ClearProducts()
+	return _u
+}
+
+// RemoveProductIDs removes the "products" edge to Product entities by IDs.
+func (_u *StoreUpdate) RemoveProductIDs(ids ...int) *StoreUpdate {
+	_u.mutation.RemoveProductIDs(ids...)
+	return _u
+}
+
+// RemoveProducts removes "products" edges to Product entities.
+func (_u *StoreUpdate) RemoveProducts(v ...*Product) *StoreUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveProductIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -224,6 +261,51 @@ func (_u *StoreUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.ProductsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   store.ProductsTable,
+			Columns: []string{store.ProductsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(product.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedProductsIDs(); len(nodes) > 0 && !_u.mutation.ProductsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   store.ProductsTable,
+			Columns: []string{store.ProductsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(product.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ProductsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   store.ProductsTable,
+			Columns: []string{store.ProductsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(product.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{store.Label}
@@ -307,6 +389,21 @@ func (_u *StoreUpdateOne) AddAdmins(v ...*StoreAdmin) *StoreUpdateOne {
 	return _u.AddAdminIDs(ids...)
 }
 
+// AddProductIDs adds the "products" edge to the Product entity by IDs.
+func (_u *StoreUpdateOne) AddProductIDs(ids ...int) *StoreUpdateOne {
+	_u.mutation.AddProductIDs(ids...)
+	return _u
+}
+
+// AddProducts adds the "products" edges to the Product entity.
+func (_u *StoreUpdateOne) AddProducts(v ...*Product) *StoreUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddProductIDs(ids...)
+}
+
 // Mutation returns the StoreMutation object of the builder.
 func (_u *StoreUpdateOne) Mutation() *StoreMutation {
 	return _u.mutation
@@ -331,6 +428,27 @@ func (_u *StoreUpdateOne) RemoveAdmins(v ...*StoreAdmin) *StoreUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveAdminIDs(ids...)
+}
+
+// ClearProducts clears all "products" edges to the Product entity.
+func (_u *StoreUpdateOne) ClearProducts() *StoreUpdateOne {
+	_u.mutation.ClearProducts()
+	return _u
+}
+
+// RemoveProductIDs removes the "products" edge to Product entities by IDs.
+func (_u *StoreUpdateOne) RemoveProductIDs(ids ...int) *StoreUpdateOne {
+	_u.mutation.RemoveProductIDs(ids...)
+	return _u
+}
+
+// RemoveProducts removes "products" edges to Product entities.
+func (_u *StoreUpdateOne) RemoveProducts(v ...*Product) *StoreUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveProductIDs(ids...)
 }
 
 // Where appends a list predicates to the StoreUpdate builder.
@@ -462,6 +580,51 @@ func (_u *StoreUpdateOne) sqlSave(ctx context.Context) (_node *Store, err error)
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(storeadmin.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ProductsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   store.ProductsTable,
+			Columns: []string{store.ProductsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(product.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedProductsIDs(); len(nodes) > 0 && !_u.mutation.ProductsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   store.ProductsTable,
+			Columns: []string{store.ProductsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(product.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ProductsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   store.ProductsTable,
+			Columns: []string{store.ProductsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(product.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

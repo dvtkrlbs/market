@@ -18,5 +18,8 @@ func (Store) Fields() []ent.Field {
 }
 
 func (Store) Edges() []ent.Edge {
-	return []ent.Edge{edge.To("admins", StoreAdmin.Type)}
+	return []ent.Edge{
+		edge.To("admins", StoreAdmin.Type),
+		edge.To("products", Product.Type),
+	}
 }

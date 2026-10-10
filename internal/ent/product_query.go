@@ -11,68 +11,92 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/dvtkrlbs/market/internal/ent/entry"
 	"github.com/dvtkrlbs/market/internal/ent/predicate"
+	"github.com/dvtkrlbs/market/internal/ent/product"
+	"github.com/dvtkrlbs/market/internal/ent/store"
 )
 
-// EntryQuery is the builder for querying Entry entities.
-type EntryQuery struct {
+// ProductQuery is the builder for querying Product entities.
+type ProductQuery struct {
 	config
 	ctx        *QueryContext
-	order      []entry.OrderOption
+	order      []product.OrderOption
 	inters     []Interceptor
-	predicates []predicate.Entry
+	predicates []predicate.Product
+	withStore  *StoreQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
 }
 
-// Where adds a new predicate for the EntryQuery builder.
-func (_q *EntryQuery) Where(ps ...predicate.Entry) *EntryQuery {
+// Where adds a new predicate for the ProductQuery builder.
+func (_q *ProductQuery) Where(ps ...predicate.Product) *ProductQuery {
 	_q.predicates = append(_q.predicates, ps...)
 	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (_q *EntryQuery) Limit(limit int) *EntryQuery {
+func (_q *ProductQuery) Limit(limit int) *ProductQuery {
 	_q.ctx.Limit = &limit
 	return _q
 }
 
 // Offset to start from.
-func (_q *EntryQuery) Offset(offset int) *EntryQuery {
+func (_q *ProductQuery) Offset(offset int) *ProductQuery {
 	_q.ctx.Offset = &offset
 	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (_q *EntryQuery) Unique(unique bool) *EntryQuery {
+func (_q *ProductQuery) Unique(unique bool) *ProductQuery {
 	_q.ctx.Unique = &unique
 	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (_q *EntryQuery) Order(o ...entry.OrderOption) *EntryQuery {
+func (_q *ProductQuery) Order(o ...product.OrderOption) *ProductQuery {
 	_q.order = append(_q.order, o...)
 	return _q
 }
 
-// First returns the first Entry entity from the query.
-// Returns a *NotFoundError when no Entry was found.
-func (_q *EntryQuery) First(ctx context.Context) (*Entry, error) {
+// QueryStore chains the current query on the "store" edge.
+func (_q *ProductQuery) QueryStore() *StoreQuery {
+	query := (&StoreClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(product.Table, product.FieldID, selector),
+			sqlgraph.To(store.Table, store.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, product.StoreTable, product.StoreColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// First returns the first Product entity from the query.
+// Returns a *NotFoundError when no Product was found.
+func (_q *ProductQuery) First(ctx context.Context) (*Product, error) {
 	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
-		return nil, &NotFoundError{entry.Label}
+		return nil, &NotFoundError{product.Label}
 	}
 	return nodes[0], nil
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (_q *EntryQuery) FirstX(ctx context.Context) *Entry {
+func (_q *ProductQuery) FirstX(ctx context.Context) *Product {
 	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -80,22 +104,22 @@ func (_q *EntryQuery) FirstX(ctx context.Context) *Entry {
 	return node
 }
 
-// FirstID returns the first Entry ID from the query.
-// Returns a *NotFoundError when no Entry ID was found.
-func (_q *EntryQuery) FirstID(ctx context.Context) (id int, err error) {
+// FirstID returns the first Product ID from the query.
+// Returns a *NotFoundError when no Product ID was found.
+func (_q *ProductQuery) FirstID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
-		err = &NotFoundError{entry.Label}
+		err = &NotFoundError{product.Label}
 		return
 	}
 	return ids[0], nil
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (_q *EntryQuery) FirstIDX(ctx context.Context) int {
+func (_q *ProductQuery) FirstIDX(ctx context.Context) int {
 	id, err := _q.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -103,10 +127,10 @@ func (_q *EntryQuery) FirstIDX(ctx context.Context) int {
 	return id
 }
 
-// Only returns a single Entry entity found by the query, ensuring it only returns one.
-// Returns a *NotSingularError when more than one Entry entity is found.
-// Returns a *NotFoundError when no Entry entities are found.
-func (_q *EntryQuery) Only(ctx context.Context) (*Entry, error) {
+// Only returns a single Product entity found by the query, ensuring it only returns one.
+// Returns a *NotSingularError when more than one Product entity is found.
+// Returns a *NotFoundError when no Product entities are found.
+func (_q *ProductQuery) Only(ctx context.Context) (*Product, error) {
 	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
@@ -115,14 +139,14 @@ func (_q *EntryQuery) Only(ctx context.Context) (*Entry, error) {
 	case 1:
 		return nodes[0], nil
 	case 0:
-		return nil, &NotFoundError{entry.Label}
+		return nil, &NotFoundError{product.Label}
 	default:
-		return nil, &NotSingularError{entry.Label}
+		return nil, &NotSingularError{product.Label}
 	}
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (_q *EntryQuery) OnlyX(ctx context.Context) *Entry {
+func (_q *ProductQuery) OnlyX(ctx context.Context) *Product {
 	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
@@ -130,10 +154,10 @@ func (_q *EntryQuery) OnlyX(ctx context.Context) *Entry {
 	return node
 }
 
-// OnlyID is like Only, but returns the only Entry ID in the query.
-// Returns a *NotSingularError when more than one Entry ID is found.
+// OnlyID is like Only, but returns the only Product ID in the query.
+// Returns a *NotSingularError when more than one Product ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (_q *EntryQuery) OnlyID(ctx context.Context) (id int, err error) {
+func (_q *ProductQuery) OnlyID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
@@ -142,15 +166,15 @@ func (_q *EntryQuery) OnlyID(ctx context.Context) (id int, err error) {
 	case 1:
 		id = ids[0]
 	case 0:
-		err = &NotFoundError{entry.Label}
+		err = &NotFoundError{product.Label}
 	default:
-		err = &NotSingularError{entry.Label}
+		err = &NotSingularError{product.Label}
 	}
 	return
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (_q *EntryQuery) OnlyIDX(ctx context.Context) int {
+func (_q *ProductQuery) OnlyIDX(ctx context.Context) int {
 	id, err := _q.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -158,18 +182,18 @@ func (_q *EntryQuery) OnlyIDX(ctx context.Context) int {
 	return id
 }
 
-// All executes the query and returns a list of Entries.
-func (_q *EntryQuery) All(ctx context.Context) ([]*Entry, error) {
+// All executes the query and returns a list of Products.
+func (_q *ProductQuery) All(ctx context.Context) ([]*Product, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
 	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
-	qr := querierAll[[]*Entry, *EntryQuery]()
-	return withInterceptors[[]*Entry](ctx, _q, qr, _q.inters)
+	qr := querierAll[[]*Product, *ProductQuery]()
+	return withInterceptors[[]*Product](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (_q *EntryQuery) AllX(ctx context.Context) []*Entry {
+func (_q *ProductQuery) AllX(ctx context.Context) []*Product {
 	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
@@ -177,20 +201,20 @@ func (_q *EntryQuery) AllX(ctx context.Context) []*Entry {
 	return nodes
 }
 
-// IDs executes the query and returns a list of Entry IDs.
-func (_q *EntryQuery) IDs(ctx context.Context) (ids []int, err error) {
+// IDs executes the query and returns a list of Product IDs.
+func (_q *ProductQuery) IDs(ctx context.Context) (ids []int, err error) {
 	if _q.ctx.Unique == nil && _q.path != nil {
 		_q.Unique(true)
 	}
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
-	if err = _q.Select(entry.FieldID).Scan(ctx, &ids); err != nil {
+	if err = _q.Select(product.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (_q *EntryQuery) IDsX(ctx context.Context) []int {
+func (_q *ProductQuery) IDsX(ctx context.Context) []int {
 	ids, err := _q.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -199,16 +223,16 @@ func (_q *EntryQuery) IDsX(ctx context.Context) []int {
 }
 
 // Count returns the count of the given query.
-func (_q *EntryQuery) Count(ctx context.Context) (int, error) {
+func (_q *ProductQuery) Count(ctx context.Context) (int, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
 	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, _q, querierCount[*EntryQuery](), _q.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*ProductQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (_q *EntryQuery) CountX(ctx context.Context) int {
+func (_q *ProductQuery) CountX(ctx context.Context) int {
 	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
@@ -217,7 +241,7 @@ func (_q *EntryQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (_q *EntryQuery) Exist(ctx context.Context) (bool, error) {
+func (_q *ProductQuery) Exist(ctx context.Context) (bool, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
 	switch _, err := _q.FirstID(ctx); {
 	case IsNotFound(err):
@@ -230,7 +254,7 @@ func (_q *EntryQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (_q *EntryQuery) ExistX(ctx context.Context) bool {
+func (_q *ProductQuery) ExistX(ctx context.Context) bool {
 	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
@@ -238,22 +262,34 @@ func (_q *EntryQuery) ExistX(ctx context.Context) bool {
 	return exist
 }
 
-// Clone returns a duplicate of the EntryQuery builder, including all associated steps. It can be
+// Clone returns a duplicate of the ProductQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (_q *EntryQuery) Clone() *EntryQuery {
+func (_q *ProductQuery) Clone() *ProductQuery {
 	if _q == nil {
 		return nil
 	}
-	return &EntryQuery{
+	return &ProductQuery{
 		config:     _q.config,
 		ctx:        _q.ctx.Clone(),
-		order:      append([]entry.OrderOption{}, _q.order...),
+		order:      append([]product.OrderOption{}, _q.order...),
 		inters:     append([]Interceptor{}, _q.inters...),
-		predicates: append([]predicate.Entry{}, _q.predicates...),
+		predicates: append([]predicate.Product{}, _q.predicates...),
+		withStore:  _q.withStore.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
 	}
+}
+
+// WithStore tells the query-builder to eager-load the nodes that are connected to
+// the "store" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ProductQuery) WithStore(opts ...func(*StoreQuery)) *ProductQuery {
+	query := (&StoreClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withStore = query
+	return _q
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -262,19 +298,19 @@ func (_q *EntryQuery) Clone() *EntryQuery {
 // Example:
 //
 //	var v []struct {
-//		Description string `json:"description,omitempty"`
+//		Barcode string `json:"barcode,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
-//	client.Entry.Query().
-//		GroupBy(entry.FieldDescription).
+//	client.Product.Query().
+//		GroupBy(product.FieldBarcode).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (_q *EntryQuery) GroupBy(field string, fields ...string) *EntryGroupBy {
+func (_q *ProductQuery) GroupBy(field string, fields ...string) *ProductGroupBy {
 	_q.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &EntryGroupBy{build: _q}
+	grbuild := &ProductGroupBy{build: _q}
 	grbuild.flds = &_q.ctx.Fields
-	grbuild.label = entry.Label
+	grbuild.label = product.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
 }
@@ -285,26 +321,26 @@ func (_q *EntryQuery) GroupBy(field string, fields ...string) *EntryGroupBy {
 // Example:
 //
 //	var v []struct {
-//		Description string `json:"description,omitempty"`
+//		Barcode string `json:"barcode,omitempty"`
 //	}
 //
-//	client.Entry.Query().
-//		Select(entry.FieldDescription).
+//	client.Product.Query().
+//		Select(product.FieldBarcode).
 //		Scan(ctx, &v)
-func (_q *EntryQuery) Select(fields ...string) *EntrySelect {
+func (_q *ProductQuery) Select(fields ...string) *ProductSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
-	sbuild := &EntrySelect{EntryQuery: _q}
-	sbuild.label = entry.Label
+	sbuild := &ProductSelect{ProductQuery: _q}
+	sbuild.label = product.Label
 	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
-// Aggregate returns a EntrySelect configured with the given aggregations.
-func (_q *EntryQuery) Aggregate(fns ...AggregateFunc) *EntrySelect {
+// Aggregate returns a ProductSelect configured with the given aggregations.
+func (_q *ProductQuery) Aggregate(fns ...AggregateFunc) *ProductSelect {
 	return _q.Select().Aggregate(fns...)
 }
 
-func (_q *EntryQuery) prepareQuery(ctx context.Context) error {
+func (_q *ProductQuery) prepareQuery(ctx context.Context) error {
 	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
@@ -316,7 +352,7 @@ func (_q *EntryQuery) prepareQuery(ctx context.Context) error {
 		}
 	}
 	for _, f := range _q.ctx.Fields {
-		if !entry.ValidColumn(f) {
+		if !product.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
@@ -330,17 +366,21 @@ func (_q *EntryQuery) prepareQuery(ctx context.Context) error {
 	return nil
 }
 
-func (_q *EntryQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Entry, error) {
+func (_q *ProductQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Product, error) {
 	var (
-		nodes = []*Entry{}
-		_spec = _q.querySpec()
+		nodes       = []*Product{}
+		_spec       = _q.querySpec()
+		loadedTypes = [1]bool{
+			_q.withStore != nil,
+		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
-		return (*Entry).scanValues(nil, columns)
+		return (*Product).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &Entry{config: _q.config}
+		node := &Product{config: _q.config}
 		nodes = append(nodes, node)
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	for i := range hooks {
@@ -352,10 +392,46 @@ func (_q *EntryQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Entry,
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := _q.withStore; query != nil {
+		if err := _q.loadStore(ctx, query, nodes, nil,
+			func(n *Product, e *Store) { n.Edges.Store = e }); err != nil {
+			return nil, err
+		}
+	}
 	return nodes, nil
 }
 
-func (_q *EntryQuery) sqlCount(ctx context.Context) (int, error) {
+func (_q *ProductQuery) loadStore(ctx context.Context, query *StoreQuery, nodes []*Product, init func(*Product), assign func(*Product, *Store)) error {
+	ids := make([]int, 0, len(nodes))
+	nodeids := make(map[int][]*Product)
+	for i := range nodes {
+		fk := nodes[i].StoreID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(store.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "store_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+
+func (_q *ProductQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
 	_spec.Node.Columns = _q.ctx.Fields
 	if len(_q.ctx.Fields) > 0 {
@@ -364,8 +440,8 @@ func (_q *EntryQuery) sqlCount(ctx context.Context) (int, error) {
 	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (_q *EntryQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(entry.Table, entry.Columns, sqlgraph.NewFieldSpec(entry.FieldID, field.TypeInt))
+func (_q *ProductQuery) querySpec() *sqlgraph.QuerySpec {
+	_spec := sqlgraph.NewQuerySpec(product.Table, product.Columns, sqlgraph.NewFieldSpec(product.FieldID, field.TypeInt))
 	_spec.From = _q.sql
 	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
@@ -374,11 +450,14 @@ func (_q *EntryQuery) querySpec() *sqlgraph.QuerySpec {
 	}
 	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, entry.FieldID)
+		_spec.Node.Columns = append(_spec.Node.Columns, product.FieldID)
 		for i := range fields {
-			if fields[i] != entry.FieldID {
+			if fields[i] != product.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if _q.withStore != nil {
+			_spec.Node.AddColumnOnce(product.FieldStoreID)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {
@@ -404,12 +483,12 @@ func (_q *EntryQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (_q *EntryQuery) sqlQuery(ctx context.Context) *sql.Selector {
+func (_q *ProductQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(_q.driver.Dialect())
-	t1 := builder.Table(entry.Table)
+	t1 := builder.Table(product.Table)
 	columns := _q.ctx.Fields
 	if len(columns) == 0 {
-		columns = entry.Columns
+		columns = product.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
 	if _q.sql != nil {
@@ -436,28 +515,28 @@ func (_q *EntryQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	return selector
 }
 
-// EntryGroupBy is the group-by builder for Entry entities.
-type EntryGroupBy struct {
+// ProductGroupBy is the group-by builder for Product entities.
+type ProductGroupBy struct {
 	selector
-	build *EntryQuery
+	build *ProductQuery
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (_g *EntryGroupBy) Aggregate(fns ...AggregateFunc) *EntryGroupBy {
+func (_g *ProductGroupBy) Aggregate(fns ...AggregateFunc) *ProductGroupBy {
 	_g.fns = append(_g.fns, fns...)
 	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (_g *EntryGroupBy) Scan(ctx context.Context, v any) error {
+func (_g *ProductGroupBy) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
 	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*EntryQuery, *EntryGroupBy](ctx, _g.build, _g, _g.build.inters, v)
+	return scanWithInterceptors[*ProductQuery, *ProductGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (_g *EntryGroupBy) sqlScan(ctx context.Context, root *EntryQuery, v any) error {
+func (_g *ProductGroupBy) sqlScan(ctx context.Context, root *ProductQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
 	aggregation := make([]string, 0, len(_g.fns))
 	for _, fn := range _g.fns {
@@ -484,28 +563,28 @@ func (_g *EntryGroupBy) sqlScan(ctx context.Context, root *EntryQuery, v any) er
 	return sql.ScanSlice(rows, v)
 }
 
-// EntrySelect is the builder for selecting fields of Entry entities.
-type EntrySelect struct {
-	*EntryQuery
+// ProductSelect is the builder for selecting fields of Product entities.
+type ProductSelect struct {
+	*ProductQuery
 	selector
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (_s *EntrySelect) Aggregate(fns ...AggregateFunc) *EntrySelect {
+func (_s *ProductSelect) Aggregate(fns ...AggregateFunc) *ProductSelect {
 	_s.fns = append(_s.fns, fns...)
 	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (_s *EntrySelect) Scan(ctx context.Context, v any) error {
+func (_s *ProductSelect) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
 	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*EntryQuery, *EntrySelect](ctx, _s.EntryQuery, _s, _s.inters, v)
+	return scanWithInterceptors[*ProductQuery, *ProductSelect](ctx, _s.ProductQuery, _s, _s.inters, v)
 }
 
-func (_s *EntrySelect) sqlScan(ctx context.Context, root *EntryQuery, v any) error {
+func (_s *ProductSelect) sqlScan(ctx context.Context, root *ProductQuery, v any) error {
 	selector := root.sqlQuery(ctx)
 	aggregation := make([]string, 0, len(_s.fns))
 	for _, fn := range _s.fns {

@@ -7,47 +7,32 @@ import (
 
 	apidoc "github.com/dvtkrlbs/market/dist"
 	authapi "github.com/dvtkrlbs/market/internal/api/auth"
-	"github.com/dvtkrlbs/market/internal/api/entries"
-	"github.com/dvtkrlbs/market/internal/api/health"
-	"github.com/dvtkrlbs/market/internal/api/orders"
-	"github.com/dvtkrlbs/market/internal/api/stores"
-	authservice "github.com/dvtkrlbs/market/internal/auth"
-	"github.com/dvtkrlbs/market/internal/bookkeeping"
-	storeservice "github.com/dvtkrlbs/market/internal/stores"
+	healthapi "github.com/dvtkrlbs/market/internal/api/health"
+	productsapi "github.com/dvtkrlbs/market/internal/api/products"
+	storesapi "github.com/dvtkrlbs/market/internal/api/stores"
+	authservice "github.com/dvtkrlbs/market/internal/services/auth"
+	productsservice "github.com/dvtkrlbs/market/internal/services/products"
+	storeservice "github.com/dvtkrlbs/market/internal/services/stores"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3filter"
 	nethttpmiddleware "github.com/oapi-codegen/nethttp-middleware"
 )
 
-func NewRouter(service *bookkeeping.Service, authentication *authservice.Service, signer *authservice.CookieSigner, storeService *storeservice.Service) (http.Handler, error) {
+func NewRouter(authentication *authservice.Service, products *productsservice.Service, signer *authservice.CookieSigner, storeService *storeservice.Service) (http.Handler, error) {
 	if signer == nil {
 		return nil, fmt.Errorf("session cookie signer is required")
 	}
 	mux := http.NewServeMux()
-	stores.HandlerFromMux(
-		stores.NewStrictHandlerWithOptions(stores.NewServer(storeService, authentication), nil, stores.StrictHTTPServerOptions{
+	storesapi.HandlerFromMux(
+		storesapi.NewStrictHandlerWithOptions(storesapi.NewServer(storeService, authentication), nil, storesapi.StrictHTTPServerOptions{
 			RequestErrorHandlerFunc:  requestErrorHandler,
 			ResponseErrorHandlerFunc: responseErrorHandler,
 		}),
 		mux,
 	)
 
-	health.HandlerFromMux(
-		health.NewStrictHandlerWithOptions(health.NewServer(), nil, health.StrictHTTPServerOptions{
-			RequestErrorHandlerFunc:  requestErrorHandler,
-			ResponseErrorHandlerFunc: responseErrorHandler,
-		}),
-		mux,
-	)
-	entries.HandlerFromMux(
-		entries.NewStrictHandlerWithOptions(entries.NewServer(service), nil, entries.StrictHTTPServerOptions{
-			RequestErrorHandlerFunc:  requestErrorHandler,
-			ResponseErrorHandlerFunc: responseErrorHandler,
-		}),
-		mux,
-	)
-	orders.HandlerFromMux(
-		orders.NewStrictHandlerWithOptions(orders.NewServer(), nil, orders.StrictHTTPServerOptions{
+	healthapi.HandlerFromMux(
+		healthapi.NewStrictHandlerWithOptions(healthapi.NewServer(), nil, healthapi.StrictHTTPServerOptions{
 			RequestErrorHandlerFunc:  requestErrorHandler,
 			ResponseErrorHandlerFunc: responseErrorHandler,
 		}),
@@ -55,6 +40,13 @@ func NewRouter(service *bookkeeping.Service, authentication *authservice.Service
 	)
 	authapi.HandlerFromMux(
 		authapi.NewStrictHandlerWithOptions(authapi.NewServer(authentication, signer), nil, authapi.StrictHTTPServerOptions{
+			RequestErrorHandlerFunc:  requestErrorHandler,
+			ResponseErrorHandlerFunc: responseErrorHandler,
+		}),
+		mux,
+	)
+	productsapi.HandlerFromMux(
+		productsapi.NewStrictHandlerWithOptions(productsapi.NewServer(products), nil, productsapi.StrictHTTPServerOptions{
 			RequestErrorHandlerFunc:  requestErrorHandler,
 			ResponseErrorHandlerFunc: responseErrorHandler,
 		}),

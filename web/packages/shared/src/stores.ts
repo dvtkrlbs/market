@@ -5,7 +5,7 @@ import {
   createStore,
   listStores,
   whoami,
-  type ListStoresFor,
+  type ContextParamParameter,
 } from "./api";
 
 export class StoreRequestError extends Error {
@@ -39,15 +39,15 @@ export const storeSessionOptions = queryOptions({
   retry: false,
 });
 
-export function useStores(mode: ListStoresFor) {
+export function useStores(context: ContextParamParameter) {
   const session = useQuery(storeSessionOptions);
   const userId = session.data?.user.id;
   const stores = useQuery({
-    queryKey: ["stores", userId, mode],
+    queryKey: ["stores", userId, context],
     enabled: userId !== undefined,
     queryFn: async ({ signal }) => {
       if (userId === undefined) throw new Error("Missing user session");
-      const response = await listStores(userId, { for: mode }, { signal });
+      const response = await listStores(userId, { context }, { signal });
       if (response.status !== 200)
         throw new StoreRequestError(response.data.message, response.status);
       return response.data;

@@ -9,8 +9,8 @@ import (
 // Admin is the predicate function for admin builders.
 type Admin func(*sql.Selector)
 
-// Entry is the predicate function for entry builders.
-type Entry func(*sql.Selector)
+// Product is the predicate function for product builders.
+type Product func(*sql.Selector)
 
 // Session is the predicate function for session builders.
 type Session func(*sql.Selector)

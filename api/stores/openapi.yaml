@@ -22,7 +22,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Store'
+                $ref: '../common/openapi.yaml#/components/schemas/Store'
         '401':
           $ref: '#/components/responses/StoreUnauthorized'
         '403':
@@ -31,19 +31,14 @@ paths:
           $ref: '#/components/responses/StoreNotFound'
   /users/{userId}/stores:
     parameters:
-      - $ref: '#/components/parameters/StoreUserId'
+      - $ref: '../common/openapi.yaml#/components/parameters/UserId'
     get:
       operationId: listStores
       security:
         - SessionAuth: []
       parameters:
-        - name: for
-          in: query
-          description: Shop lists approved global stores; manage lists stores administered by this user, including unapproved stores. Both exclude deleted stores. Admin lists stores administered by this user, including unapproved and deleted stores.
-          schema:
-            type: string
-            enum: [admin, manage, shop]
-            default: shop
+        - $ref: '../common/openapi.yaml#/components/parameters/ContextParam'
+
       responses:
         '200':
           description: Stores ordered by ID
@@ -52,7 +47,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Store'
+                  $ref: '../common/openapi.yaml#/components/schemas/Store'
         '401':
           $ref: '#/components/responses/StoreUnauthorized'
         '403':
@@ -74,7 +69,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Store'
+                $ref: '../common/openapi.yaml#/components/schemas/Store'
         '400':
           $ref: '#/components/responses/StoreBadRequest'
         '401':
@@ -101,7 +96,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Store'
+                $ref: '../common/openapi.yaml#/components/schemas/Store'
         '401':
           $ref: '#/components/responses/StoreUnauthorized'
         '403':
@@ -125,7 +120,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Store'
+                $ref: '../common/openapi.yaml#/components/schemas/Store'
         '400':
           $ref: '#/components/responses/StoreBadRequest'
         '401':
@@ -187,17 +182,6 @@ components:
           schema:
             $ref: '../common/openapi.yaml#/components/schemas/Error'
   schemas:
-    Store:
-      type: object
-      required: [id, name, approved]
-      properties:
-        id:
-          type: integer
-          x-go-name: ID
-        name:
-          type: string
-        approved:
-          type: boolean
     CreateStore:
       type: object
       additionalProperties: false

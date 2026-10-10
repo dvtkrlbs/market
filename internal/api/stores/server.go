@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 
+	"github.com/dvtkrlbs/market/internal/api/common"
 	requesthelper "github.com/dvtkrlbs/market/internal/api/request"
-	"github.com/dvtkrlbs/market/internal/auth"
 	"github.com/dvtkrlbs/market/internal/ent"
-	storeservice "github.com/dvtkrlbs/market/internal/stores"
+	authservice "github.com/dvtkrlbs/market/internal/services/auth"
+	storeservice "github.com/dvtkrlbs/market/internal/services/stores"
 )
 
 type service interface {
@@ -52,7 +53,7 @@ func (s *Server) ApproveStore(ctx context.Context, input ApproveStoreRequestObje
 }
 
 func authorize(ctx context.Context, userID int) int {
-	principal, ok := auth.PrincipalFromContext(ctx)
+	principal, ok := authservice.PrincipalFromContext(ctx)
 	if !ok || principal.User == nil {
 		return 401
 	}
@@ -62,8 +63,8 @@ func authorize(ctx context.Context, userID int) int {
 	return 0
 }
 
-func storeResponse(item *ent.Store) Store {
-	return Store{ID: item.ID, Name: item.Name, Approved: item.Approved}
+func storeResponse(item *ent.Store) common.Store {
+	return common.Store{ID: item.ID, Name: item.Name, Approved: item.Approved}
 }
 
 func (s *Server) ListStores(ctx context.Context, request ListStoresRequestObject) (ListStoresResponseObject, error) {
@@ -74,8 +75,8 @@ func (s *Server) ListStores(ctx context.Context, request ListStoresRequestObject
 		return ListStores403JSONResponse{StoreForbiddenJSONResponse{Message: "user mismatch"}}, nil
 	}
 	mode := "shop"
-	if request.Params.For != nil {
-		mode = string(*request.Params.For)
+	if request.Params.Context != nil {
+		mode = string(*request.Params.Context)
 	}
 	items, err := s.stores.List(ctx, request.UserId, mode)
 	if err != nil {

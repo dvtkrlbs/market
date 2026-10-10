@@ -27,19 +27,35 @@ var (
 			},
 		},
 	}
-	// EntriesColumns holds the columns for the "entries" table.
-	EntriesColumns = []*schema.Column{
+	// ProductsColumns holds the columns for the "products" table.
+	ProductsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "description", Type: field.TypeString},
-		{Name: "amount_cents", Type: field.TypeInt64},
-		{Name: "occurred_at", Type: field.TypeTime},
+		{Name: "barcode", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "store_id", Type: field.TypeInt},
 	}
-	// EntriesTable holds the schema information for the "entries" table.
-	EntriesTable = &schema.Table{
-		Name:       "entries",
-		Columns:    EntriesColumns,
-		PrimaryKey: []*schema.Column{EntriesColumns[0]},
+	// ProductsTable holds the schema information for the "products" table.
+	ProductsTable = &schema.Table{
+		Name:       "products",
+		Columns:    ProductsColumns,
+		PrimaryKey: []*schema.Column{ProductsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "products_stores_products",
+				Columns:    []*schema.Column{ProductsColumns[5]},
+				RefColumns: []*schema.Column{StoresColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "product_store_id_barcode",
+				Unique:  true,
+				Columns: []*schema.Column{ProductsColumns[5], ProductsColumns[1]},
+			},
+		},
 	}
 	// SessionsColumns holds the columns for the "sessions" table.
 	SessionsColumns = []*schema.Column{
@@ -146,7 +162,7 @@ var (
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		AdminsTable,
-		EntriesTable,
+		ProductsTable,
 		SessionsTable,
 		StoresTable,
 		StoreAdminsTable,
@@ -156,6 +172,7 @@ var (
 
 func init() {
 	AdminsTable.ForeignKeys[0].RefTable = UsersTable
+	ProductsTable.ForeignKeys[0].RefTable = StoresTable
 	SessionsTable.ForeignKeys[0].RefTable = UsersTable
 	StoreAdminsTable.ForeignKeys[0].RefTable = StoresTable
 	StoreAdminsTable.ForeignKeys[1].RefTable = UsersTable

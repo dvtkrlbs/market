@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	authservice "github.com/dvtkrlbs/market/internal/auth"
+	authservice "github.com/dvtkrlbs/market/internal/services/auth"
 )
 
 func testCookieSigner(t *testing.T) *authservice.CookieSigner {

@@ -17,15 +17,15 @@ import (
 	"github.com/oapi-codegen/runtime"
 )
 
-// Defines values for ListStoresParamsFor.
+// Defines values for ListStoresParamsContext.
 const (
-	Admin  ListStoresParamsFor = "admin"
-	Manage ListStoresParamsFor = "manage"
-	Shop   ListStoresParamsFor = "shop"
+	Admin  ListStoresParamsContext = "admin"
+	Manage ListStoresParamsContext = "manage"
+	Shop   ListStoresParamsContext = "shop"
 )
 
-// Valid indicates whether the value is a known member of the ListStoresParamsFor enum.
-func (e ListStoresParamsFor) Valid() bool {
+// Valid indicates whether the value is a known member of the ListStoresParamsContext enum.
+func (e ListStoresParamsContext) Valid() bool {
 	switch e {
 	case Admin:
 		return true
@@ -41,13 +41,6 @@ func (e ListStoresParamsFor) Valid() bool {
 // CreateStore defines model for CreateStore.
 type CreateStore struct {
 	Name string `json:"name"`
-}
-
-// Store defines model for Store.
-type Store struct {
-	Approved bool   `json:"approved"`
-	ID       int    `json:"id"`
-	Name     string `json:"name"`
 }
 
 // UpdateStore defines model for UpdateStore.
@@ -73,12 +66,12 @@ type StoreUnauthorized = externalRef0.Error
 
 // ListStoresParams defines parameters for ListStores.
 type ListStoresParams struct {
-	// For Shop lists approved global stores; manage lists stores administered by this user, including unapproved stores. Both exclude deleted stores. Admin lists stores administered by this user, including unapproved and deleted stores.
-	For *ListStoresParamsFor `form:"for,omitempty" json:"for,omitempty"`
+	// Context Shop lists approved global stores; manage lists stores administered by this user, including unapproved stores. Both exclude deleted stores. Admin lists stores administered by this user, including unapproved and deleted stores.
+	Context *ListStoresParamsContext `form:"context,omitempty" json:"context,omitempty"`
 }
 
-// ListStoresParamsFor defines parameters for ListStores.
-type ListStoresParamsFor string
+// ListStoresParamsContext defines parameters for ListStores.
+type ListStoresParamsContext string
 
 // CreateStoreJSONRequestBody defines body for CreateStore for application/json ContentType.
 type CreateStoreJSONRequestBody = CreateStore
@@ -93,10 +86,10 @@ type ServerInterface interface {
 	ApproveStore(w http.ResponseWriter, r *http.Request, storeId int)
 
 	// (GET /users/{userId}/stores)
-	ListStores(w http.ResponseWriter, r *http.Request, userId StoreUserId, params ListStoresParams)
+	ListStores(w http.ResponseWriter, r *http.Request, userId externalRef0.UserId, params ListStoresParams)
 
 	// (POST /users/{userId}/stores)
-	CreateStore(w http.ResponseWriter, r *http.Request, userId StoreUserId)
+	CreateStore(w http.ResponseWriter, r *http.Request, userId externalRef0.UserId)
 
 	// (DELETE /users/{userId}/stores/{storeId})
 	DeleteStore(w http.ResponseWriter, r *http.Request, userId StoreUserId, storeId int)
@@ -150,7 +143,7 @@ func (siw *ServerInterfaceWrapper) ListStores(w http.ResponseWriter, r *http.Req
 	_ = err
 
 	// ------------- Path parameter "userId" -------------
-	var userId StoreUserId
+	var userId externalRef0.UserId
 
 	err = runtime.BindStyledParameterWithOptions("simple", "userId", r.PathValue("userId"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "", ValueIsUnescaped: true})
 	if err != nil {
@@ -161,15 +154,15 @@ func (siw *ServerInterfaceWrapper) ListStores(w http.ResponseWriter, r *http.Req
 	// Parameter object where we will unmarshal all parameters from the context
 	var params ListStoresParams
 
-	// ------------- Optional query parameter "for" -------------
+	// ------------- Optional query parameter "context" -------------
 
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "for", r.URL.Query(), &params.For, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "context", r.URL.Query(), &params.Context, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
 	if err != nil {
 		var requiredError *runtime.RequiredParameterError
 		if errors.As(err, &requiredError) {
-			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "for"})
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "context"})
 		} else {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "for", Err: err})
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "context", Err: err})
 		}
 		return
 	}
@@ -192,7 +185,7 @@ func (siw *ServerInterfaceWrapper) CreateStore(w http.ResponseWriter, r *http.Re
 	_ = err
 
 	// ------------- Path parameter "userId" -------------
-	var userId StoreUserId
+	var userId externalRef0.UserId
 
 	err = runtime.BindStyledParameterWithOptions("simple", "userId", r.PathValue("userId"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "", ValueIsUnescaped: true})
 	if err != nil {
@@ -462,7 +455,7 @@ type ApproveStoreResponseObject interface {
 	VisitApproveStoreResponse(w http.ResponseWriter) error
 }
 
-type ApproveStore200JSONResponse Store
+type ApproveStore200JSONResponse externalRef0.Store
 
 func (response ApproveStore200JSONResponse) VisitApproveStoreResponse(w http.ResponseWriter) error {
 
@@ -519,7 +512,7 @@ func (response ApproveStore404JSONResponse) VisitApproveStoreResponse(w http.Res
 }
 
 type ListStoresRequestObject struct {
-	UserId StoreUserId `json:"userId"`
+	UserId externalRef0.UserId `json:"userId"`
 	Params ListStoresParams
 }
 
@@ -527,7 +520,7 @@ type ListStoresResponseObject interface {
 	VisitListStoresResponse(w http.ResponseWriter) error
 }
 
-type ListStores200JSONResponse []Store
+type ListStores200JSONResponse []externalRef0.Store
 
 func (response ListStores200JSONResponse) VisitListStoresResponse(w http.ResponseWriter) error {
 
@@ -570,7 +563,7 @@ func (response ListStores403JSONResponse) VisitListStoresResponse(w http.Respons
 }
 
 type CreateStoreRequestObject struct {
-	UserId StoreUserId `json:"userId"`
+	UserId externalRef0.UserId `json:"userId"`
 	Body   *CreateStoreJSONRequestBody
 }
 
@@ -578,7 +571,7 @@ type CreateStoreResponseObject interface {
 	VisitCreateStoreResponse(w http.ResponseWriter) error
 }
 
-type CreateStore201JSONResponse Store
+type CreateStore201JSONResponse externalRef0.Store
 
 func (response CreateStore201JSONResponse) VisitCreateStoreResponse(w http.ResponseWriter) error {
 
@@ -702,7 +695,7 @@ type GetStoreResponseObject interface {
 	VisitGetStoreResponse(w http.ResponseWriter) error
 }
 
-type GetStore200JSONResponse Store
+type GetStore200JSONResponse externalRef0.Store
 
 func (response GetStore200JSONResponse) VisitGetStoreResponse(w http.ResponseWriter) error {
 
@@ -768,7 +761,7 @@ type UpdateStoreResponseObject interface {
 	VisitUpdateStoreResponse(w http.ResponseWriter) error
 }
 
-type UpdateStore200JSONResponse Store
+type UpdateStore200JSONResponse externalRef0.Store
 
 func (response UpdateStore200JSONResponse) VisitUpdateStoreResponse(w http.ResponseWriter) error {
 
@@ -926,7 +919,7 @@ func (sh *strictHandler) ApproveStore(w http.ResponseWriter, r *http.Request, st
 }
 
 // ListStores operation middleware
-func (sh *strictHandler) ListStores(w http.ResponseWriter, r *http.Request, userId StoreUserId, params ListStoresParams) {
+func (sh *strictHandler) ListStores(w http.ResponseWriter, r *http.Request, userId externalRef0.UserId, params ListStoresParams) {
 	var request ListStoresRequestObject
 
 	request.UserId = userId
@@ -953,7 +946,7 @@ func (sh *strictHandler) ListStores(w http.ResponseWriter, r *http.Request, user
 }
 
 // CreateStore operation middleware
-func (sh *strictHandler) CreateStore(w http.ResponseWriter, r *http.Request, userId StoreUserId) {
+func (sh *strictHandler) CreateStore(w http.ResponseWriter, r *http.Request, userId externalRef0.UserId) {
 	var request CreateStoreRequestObject
 
 	request.UserId = userId

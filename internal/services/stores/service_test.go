@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dvtkrlbs/market/internal/auth"
 	"github.com/dvtkrlbs/market/internal/database"
 	"github.com/dvtkrlbs/market/internal/ent"
-	"github.com/dvtkrlbs/market/internal/ent/storeadmin"
+	storeadminservice "github.com/dvtkrlbs/market/internal/ent/storeadmin"
+	authservice "github.com/dvtkrlbs/market/internal/services/auth"
 	"github.com/dvtkrlbs/market/migrations"
 )
 
@@ -82,7 +82,7 @@ func TestStoreCRUDIntegration(t *testing.T) {
 	defer client.Close()
 	first := client.User.Create().SetEmail("first@example.com").SetPasswordHash("test").SaveX(ctx)
 	second := client.User.Create().SetEmail("second@example.com").SetPasswordHash("test").SaveX(ctx)
-	authentication := auth.New(client)
+	authentication := authservice.New(client)
 	if isAdmin, err := authentication.IsAdmin(ctx, first.ID); err != nil || isAdmin {
 		t.Fatalf("non-admin membership: %t, %v", isAdmin, err)
 	}
@@ -179,7 +179,7 @@ func TestStoreCRUDIntegration(t *testing.T) {
 	if err := s.Delete(ctx, second.ID, created.ID); err != nil {
 		t.Fatal(err)
 	}
-	if count := client.StoreAdmin.Query().Where(storeadmin.StoreIDEQ(created.ID)).CountX(ctx); count != 2 {
+	if count := client.StoreAdmin.Query().Where(storeadminservice.StoreIDEQ(created.ID)).CountX(ctx); count != 2 {
 		t.Fatalf("memberships not retained: %d", count)
 	}
 	if item := client.Store.GetX(ctx, created.ID); item.DeletedAt == nil {
