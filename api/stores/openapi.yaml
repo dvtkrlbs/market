@@ -1,0 +1,192 @@
+openapi: 3.0.3
+info:
+  title: Market stores API
+  version: 0.1.0
+paths:
+  /users/{userId}/stores:
+    parameters:
+      - $ref: '#/components/parameters/StoreUserId'
+    get:
+      operationId: listStores
+      security:
+        - SessionAuth: []
+      parameters:
+        - name: for
+          in: query
+          description: Shop lists approved global stores; manage lists stores administered by this user, including unapproved stores. Both exclude deleted stores. Admin lists stores administered by this user, including unapproved and deleted stores.
+          schema:
+            type: string
+            enum: [admin, manage, shop]
+            default: shop
+      responses:
+        '200':
+          description: Stores ordered by ID
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Store'
+        '401':
+          $ref: '#/components/responses/StoreUnauthorized'
+        '403':
+          $ref: '#/components/responses/StoreForbidden'
+    post:
+      operationId: createStore
+      security:
+        - SessionAuth: []
+      description: Creates an unapproved global store and makes the requesting user its StoreAdmin.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateStore'
+      responses:
+        '201':
+          description: Store created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Store'
+        '400':
+          $ref: '#/components/responses/StoreBadRequest'
+        '401':
+          $ref: '#/components/responses/StoreUnauthorized'
+        '403':
+          $ref: '#/components/responses/StoreForbidden'
+  /users/{userId}/stores/{storeId}:
+    parameters:
+      - $ref: '#/components/parameters/StoreUserId'
+      - name: storeId
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+    get:
+      operationId: getStore
+      security:
+        - SessionAuth: []
+      description: Returns an approved store, or an unapproved store if the user administers it.
+      responses:
+        '200':
+          description: Store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Store'
+        '401':
+          $ref: '#/components/responses/StoreUnauthorized'
+        '403':
+          $ref: '#/components/responses/StoreForbidden'
+        '404':
+          $ref: '#/components/responses/StoreNotFound'
+    patch:
+      operationId: updateStore
+      security:
+        - SessionAuth: []
+      description: Updates a store administered by the requesting user.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateStore'
+      responses:
+        '200':
+          description: Store updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Store'
+        '400':
+          $ref: '#/components/responses/StoreBadRequest'
+        '401':
+          $ref: '#/components/responses/StoreUnauthorized'
+        '403':
+          $ref: '#/components/responses/StoreForbidden'
+        '404':
+          $ref: '#/components/responses/StoreNotFound'
+    delete:
+      operationId: deleteStore
+      security:
+        - SessionAuth: []
+      description: Soft-deletes a store administered by the requesting user, retaining its StoreAdmin memberships.
+      responses:
+        '204':
+          description: Store deleted
+        '401':
+          $ref: '#/components/responses/StoreUnauthorized'
+        '403':
+          $ref: '#/components/responses/StoreForbidden'
+        '404':
+          $ref: '#/components/responses/StoreNotFound'
+components:
+  securitySchemes:
+    SessionAuth:
+      $ref: '../common/openapi.yaml#/components/securitySchemes/SessionAuth'
+  parameters:
+    StoreUserId:
+      name: userId
+      in: path
+      required: true
+      description: Must match the authenticated user.
+      schema:
+        type: integer
+        minimum: 1
+  responses:
+    StoreBadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '../common/openapi.yaml#/components/schemas/Error'
+    StoreUnauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '../common/openapi.yaml#/components/schemas/Error'
+    StoreForbidden:
+      description: User mismatch or store administration required
+      content:
+        application/json:
+          schema:
+            $ref: '../common/openapi.yaml#/components/schemas/Error'
+    StoreNotFound:
+      description: Store not found or not visible to this user
+      content:
+        application/json:
+          schema:
+            $ref: '../common/openapi.yaml#/components/schemas/Error'
+  schemas:
+    Store:
+      type: object
+      required: [id, name, approved]
+      properties:
+        id:
+          type: integer
+          x-go-name: ID
+        name:
+          type: string
+        approved:
+          type: boolean
+    CreateStore:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+    UpdateStore:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+        approved:
+          type: boolean

@@ -59,6 +59,7 @@ curl -c cookies.txt -X POST http://localhost:8080/auth/login \
 curl -b cookies.txt http://localhost:8080/auth/whoami
 curl -b cookies.txt http://localhost:8080/entries
 curl -b cookies.txt http://localhost:8080/orders
+curl -b cookies.txt 'http://localhost:8080/users/1/stores?for=shop'
 ```
 
 Login sets an HttpOnly, SameSite=Lax cookie named `session` containing an opaque
@@ -77,6 +78,30 @@ server permits credentialed CORS and unauthenticated preflights only for these
 origins; cross-origin requests are denied by default. Do not use wildcards.
 Session IP metadata prefers `Forwarded` and `X-Forwarded-For`, so deployments
 must configure their reverse proxy to replace untrusted forwarding headers.
+
+## Stores
+
+Stores are global entities with `id`, `name`, and `approved`. All store routes
+require a session, and `{userId}` must match the authenticated user:
+
+- `GET /users/{userId}/stores?for=shop` (default): all approved stores.
+- `GET /users/{userId}/stores?for=manage`: stores where the user has a
+  `StoreAdmin` membership, including unapproved stores but excluding deleted stores.
+- `GET /users/{userId}/stores?for=admin`: stores where the user has a
+  `StoreAdmin` membership, including unapproved and soft-deleted stores.
+- `POST /users/{userId}/stores` with `{"name":"My shop"}`: creates a store
+  with `approved=false` and grants the creator a `StoreAdmin` membership.
+- `GET /users/{userId}/stores/{storeId}`: an approved store, or any store the
+  user administers.
+- `PATCH /users/{userId}/stores/{storeId}` with `name` and/or `approved`:
+  updates a store the user administers. StoreAdmins can approve their stores
+  for now; there is no separate market-wide approval role.
+- `DELETE /users/{userId}/stores/{storeId}`: soft-deletes a store the user
+  administers by setting `deleted_at`, retaining its `StoreAdmin` memberships.
+  Deleted stores are excluded from `shop` and `manage` listings, reads, and updates.
+
+Store creation is open to any authenticated user. StoreAdmin memberships are
+unique per user/store pair; stores do not have an owning user.
 
 The OpenAPI modules are stitched into a validated, self-contained contract with:
 

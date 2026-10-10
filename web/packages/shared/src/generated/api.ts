@@ -13,6 +13,11 @@ export interface CreateEntry {
   occurredAt: string;
 }
 
+export interface CreateStore {
+  /** @minLength 1 */
+  name: string;
+}
+
 export interface Credentials {
   /** @maxLength 320 */
   email: string;
@@ -47,6 +52,18 @@ export interface SessionExpiry {
   expiresAt: string;
 }
 
+export interface Store {
+  approved: boolean;
+  id: number;
+  name: string;
+}
+
+export interface UpdateStore {
+  approved?: boolean;
+  /** @minLength 1 */
+  name?: string;
+}
+
 export interface User {
   createdAt: string;
   email: string;
@@ -64,9 +81,44 @@ export interface Whoami {
 export type BadRequestResponse = Error;
 
 /**
+ * Invalid request
+ */
+export type StoreBadRequestResponse = Error;
+
+/**
+ * User mismatch or store administration required
+ */
+export type StoreForbiddenResponse = Error;
+
+/**
+ * Store not found or not visible to this user
+ */
+export type StoreNotFoundResponse = Error;
+
+/**
+ * Authentication required
+ */
+export type StoreUnauthorizedResponse = Error;
+
+/**
  * Authentication failed
  */
 export type UnauthorizedResponse = Error;
+
+export type ListStoresParams = {
+  /**
+   * Shop lists approved global stores; manage lists stores administered by this user, including unapproved stores. Both exclude deleted stores. Admin lists stores administered by this user, including unapproved and deleted stores.
+   */
+  for?: ListStoresFor;
+};
+
+export type ListStoresFor = (typeof ListStoresFor)[keyof typeof ListStoresFor];
+
+export const ListStoresFor = {
+  admin: "admin",
+  manage: "manage",
+  shop: "shop",
+} as const;
 
 export type loginResponse200 = {
   data: SessionExpiry;
@@ -450,4 +502,338 @@ export const getOrdersPlaceholder = async (
 
   const data: getOrdersPlaceholderResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as getOrdersPlaceholderResponse;
+};
+
+export type listStoresResponse200 = {
+  data: Store[];
+  status: 200;
+};
+
+export type listStoresResponse401 = {
+  data: StoreUnauthorizedResponse;
+  status: 401;
+};
+
+export type listStoresResponse403 = {
+  data: StoreForbiddenResponse;
+  status: 403;
+};
+
+export type listStoresResponseSuccess = listStoresResponse200 & {
+  headers: Headers;
+};
+export type listStoresResponseError = (listStoresResponse401 | listStoresResponse403) & {
+  headers: Headers;
+};
+
+export type listStoresResponse = listStoresResponseSuccess | listStoresResponseError;
+
+export const getListStoresUrl = (userId: number, params?: ListStoresParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `${getApiBaseUrl()}/users/${userId}/stores?${stringifiedParams}`
+    : `${getApiBaseUrl()}/users/${userId}/stores`;
+};
+
+export const listStores = async (
+  userId: number,
+  params?: ListStoresParams,
+  options?: RequestInit,
+): Promise<listStoresResponse> => {
+  const res = await fetch(getListStoresUrl(userId, params), {
+    credentials: "include",
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listStoresResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as listStoresResponse;
+};
+
+export type createStoreResponse201 = {
+  data: Store;
+  status: 201;
+};
+
+export type createStoreResponse400 = {
+  data: StoreBadRequestResponse;
+  status: 400;
+};
+
+export type createStoreResponse401 = {
+  data: StoreUnauthorizedResponse;
+  status: 401;
+};
+
+export type createStoreResponse403 = {
+  data: StoreForbiddenResponse;
+  status: 403;
+};
+
+export type createStoreResponseSuccess = createStoreResponse201 & {
+  headers: Headers;
+};
+export type createStoreResponseError = (
+  | createStoreResponse400
+  | createStoreResponse401
+  | createStoreResponse403
+) & {
+  headers: Headers;
+};
+
+export type createStoreResponse = createStoreResponseSuccess | createStoreResponseError;
+
+export const getCreateStoreUrl = (userId: number) => {
+  return `${getApiBaseUrl()}/users/${userId}/stores`;
+};
+
+/**
+ * Creates an unapproved global store and makes the requesting user its StoreAdmin.
+ */
+export const createStore = async (
+  userId: number,
+  createStoreBody: CreateStore,
+  options?: RequestInit,
+): Promise<createStoreResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit["headers"]>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  const res = await fetch(getCreateStoreUrl(userId), {
+    credentials: "include",
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    body: JSON.stringify(createStoreBody),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createStoreResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as createStoreResponse;
+};
+
+export type deleteStoreResponse204 = {
+  data: void;
+  status: 204;
+};
+
+export type deleteStoreResponse401 = {
+  data: StoreUnauthorizedResponse;
+  status: 401;
+};
+
+export type deleteStoreResponse403 = {
+  data: StoreForbiddenResponse;
+  status: 403;
+};
+
+export type deleteStoreResponse404 = {
+  data: StoreNotFoundResponse;
+  status: 404;
+};
+
+export type deleteStoreResponseSuccess = deleteStoreResponse204 & {
+  headers: Headers;
+};
+export type deleteStoreResponseError = (
+  | deleteStoreResponse401
+  | deleteStoreResponse403
+  | deleteStoreResponse404
+) & {
+  headers: Headers;
+};
+
+export type deleteStoreResponse = deleteStoreResponseSuccess | deleteStoreResponseError;
+
+export const getDeleteStoreUrl = (userId: number, storeId: number) => {
+  return `${getApiBaseUrl()}/users/${userId}/stores/${storeId}`;
+};
+
+/**
+ * Soft-deletes a store administered by the requesting user, retaining its StoreAdmin memberships.
+ */
+export const deleteStore = async (
+  userId: number,
+  storeId: number,
+  options?: RequestInit,
+): Promise<deleteStoreResponse> => {
+  const res = await fetch(getDeleteStoreUrl(userId, storeId), {
+    credentials: "include",
+    ...options,
+    method: "DELETE",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteStoreResponse["data"] = body ? JSON.parse(body) : undefined;
+  return { data, status: res.status, headers: res.headers } as deleteStoreResponse;
+};
+
+export type getStoreResponse200 = {
+  data: Store;
+  status: 200;
+};
+
+export type getStoreResponse401 = {
+  data: StoreUnauthorizedResponse;
+  status: 401;
+};
+
+export type getStoreResponse403 = {
+  data: StoreForbiddenResponse;
+  status: 403;
+};
+
+export type getStoreResponse404 = {
+  data: StoreNotFoundResponse;
+  status: 404;
+};
+
+export type getStoreResponseSuccess = getStoreResponse200 & {
+  headers: Headers;
+};
+export type getStoreResponseError = (
+  | getStoreResponse401
+  | getStoreResponse403
+  | getStoreResponse404
+) & {
+  headers: Headers;
+};
+
+export type getStoreResponse = getStoreResponseSuccess | getStoreResponseError;
+
+export const getGetStoreUrl = (userId: number, storeId: number) => {
+  return `${getApiBaseUrl()}/users/${userId}/stores/${storeId}`;
+};
+
+/**
+ * Returns an approved store, or an unapproved store if the user administers it.
+ */
+export const getStore = async (
+  userId: number,
+  storeId: number,
+  options?: RequestInit,
+): Promise<getStoreResponse> => {
+  const res = await fetch(getGetStoreUrl(userId, storeId), {
+    credentials: "include",
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getStoreResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as getStoreResponse;
+};
+
+export type updateStoreResponse200 = {
+  data: Store;
+  status: 200;
+};
+
+export type updateStoreResponse400 = {
+  data: StoreBadRequestResponse;
+  status: 400;
+};
+
+export type updateStoreResponse401 = {
+  data: StoreUnauthorizedResponse;
+  status: 401;
+};
+
+export type updateStoreResponse403 = {
+  data: StoreForbiddenResponse;
+  status: 403;
+};
+
+export type updateStoreResponse404 = {
+  data: StoreNotFoundResponse;
+  status: 404;
+};
+
+export type updateStoreResponseSuccess = updateStoreResponse200 & {
+  headers: Headers;
+};
+export type updateStoreResponseError = (
+  | updateStoreResponse400
+  | updateStoreResponse401
+  | updateStoreResponse403
+  | updateStoreResponse404
+) & {
+  headers: Headers;
+};
+
+export type updateStoreResponse = updateStoreResponseSuccess | updateStoreResponseError;
+
+export const getUpdateStoreUrl = (userId: number, storeId: number) => {
+  return `${getApiBaseUrl()}/users/${userId}/stores/${storeId}`;
+};
+
+/**
+ * Updates a store administered by the requesting user.
+ */
+export const updateStore = async (
+  userId: number,
+  storeId: number,
+  updateStoreBody: UpdateStore,
+  options?: RequestInit,
+): Promise<updateStoreResponse> => {
+  const getHeaders = (
+    h?: NonNullable<RequestInit["headers"]>,
+  ): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(
+          h as Iterable<Iterable<string>>,
+          (entry) => Array.from(entry) as [string, string],
+        ),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+  const res = await fetch(getUpdateStoreUrl(userId, storeId), {
+    credentials: "include",
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    body: JSON.stringify(updateStoreBody),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateStoreResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as updateStoreResponse;
 };

@@ -8,6 +8,7 @@ import (
 	"github.com/dvtkrlbs/market/internal/ent/entry"
 	"github.com/dvtkrlbs/market/internal/ent/schema"
 	"github.com/dvtkrlbs/market/internal/ent/session"
+	"github.com/dvtkrlbs/market/internal/ent/store"
 	"github.com/dvtkrlbs/market/internal/ent/user"
 )
 
@@ -31,6 +32,16 @@ func init() {
 	sessionDescCreatedAt := sessionFields[5].Descriptor()
 	// session.DefaultCreatedAt holds the default value on creation for the created_at field.
 	session.DefaultCreatedAt = sessionDescCreatedAt.Default.(func() time.Time)
+	storeFields := schema.Store{}.Fields()
+	_ = storeFields
+	// storeDescName is the schema descriptor for name field.
+	storeDescName := storeFields[0].Descriptor()
+	// store.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	store.NameValidator = storeDescName.Validators[0].(func(string) error)
+	// storeDescApproved is the schema descriptor for approved field.
+	storeDescApproved := storeFields[1].Descriptor()
+	// store.DefaultApproved holds the default value on creation for the approved field.
+	store.DefaultApproved = storeDescApproved.Default.(bool)
 	userFields := schema.User{}.Fields()
 	_ = userFields
 	// userDescEmail is the schema descriptor for email field.

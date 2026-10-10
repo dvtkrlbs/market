@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/dvtkrlbs/market/internal/ent/session"
+	"github.com/dvtkrlbs/market/internal/ent/storeadmin"
 	"github.com/dvtkrlbs/market/internal/ent/user"
 )
 
@@ -74,6 +75,21 @@ func (_c *UserCreate) AddSessions(v ...*Session) *UserCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddSessionIDs(ids...)
+}
+
+// AddStoreAdminIDs adds the "store_admins" edge to the StoreAdmin entity by IDs.
+func (_c *UserCreate) AddStoreAdminIDs(ids ...int) *UserCreate {
+	_c.mutation.AddStoreAdminIDs(ids...)
+	return _c
+}
+
+// AddStoreAdmins adds the "store_admins" edges to the StoreAdmin entity.
+func (_c *UserCreate) AddStoreAdmins(v ...*StoreAdmin) *UserCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddStoreAdminIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -184,6 +200,22 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(session.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.StoreAdminsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.StoreAdminsTable,
+			Columns: []string{user.StoreAdminsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(storeadmin.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

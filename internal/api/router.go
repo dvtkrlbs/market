@@ -10,18 +10,31 @@ import (
 	"github.com/dvtkrlbs/market/internal/api/entries"
 	"github.com/dvtkrlbs/market/internal/api/health"
 	"github.com/dvtkrlbs/market/internal/api/orders"
+	"github.com/dvtkrlbs/market/internal/api/stores"
 	authservice "github.com/dvtkrlbs/market/internal/auth"
 	"github.com/dvtkrlbs/market/internal/bookkeeping"
+	storeservice "github.com/dvtkrlbs/market/internal/stores"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3filter"
 	nethttpmiddleware "github.com/oapi-codegen/nethttp-middleware"
 )
 
-func NewRouter(service *bookkeeping.Service, authentication *authservice.Service, signer *authservice.CookieSigner) (http.Handler, error) {
+func NewRouter(service *bookkeeping.Service, authentication *authservice.Service, signer *authservice.CookieSigner, storeService *storeservice.Service) (http.Handler, error) {
 	if signer == nil {
 		return nil, fmt.Errorf("session cookie signer is required")
 	}
 	mux := http.NewServeMux()
+	stores.HandlerFromMux(
+		stores.NewStrictHandlerWithOptions(stores.NewServer(storeService), nil, stores.StrictHTTPServerOptions{
+			RequestErrorHandlerFunc: func(w http.ResponseWriter, _ *http.Request, _ error) {
+				writeAPIError(w, http.StatusBadRequest, "invalid request")
+			},
+			ResponseErrorHandlerFunc: func(w http.ResponseWriter, _ *http.Request, _ error) {
+				writeAPIError(w, http.StatusInternalServerError, "internal server error")
+			},
+		}),
+		mux,
+	)
 
 	health.HandlerFromMux(
 		health.NewStrictHandler(health.NewServer(), nil),

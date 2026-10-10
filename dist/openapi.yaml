@@ -1,4 +1,13 @@
 components:
+  parameters:
+    StoreUserId:
+      description: Must match the authenticated user.
+      in: path
+      name: userId
+      required: true
+      schema:
+        minimum: 1.0
+        type: integer
   responses:
     BadRequest:
       content:
@@ -6,6 +15,30 @@ components:
           schema:
             $ref: "#/components/schemas/Error"
       description: Invalid request
+    StoreBadRequest:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+      description: Invalid request
+    StoreForbidden:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+      description: User mismatch or store administration required
+    StoreNotFound:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+      description: Store not found or not visible to this user
+    StoreUnauthorized:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+      description: Authentication required
     Unauthorized:
       content:
         application/json:
@@ -28,6 +61,15 @@ components:
       - description
       - amountCents
       - occurredAt
+      type: object
+    CreateStore:
+      additionalProperties: false
+      properties:
+        name:
+          minLength: 1
+          type: string
+      required:
+      - name
       type: object
     Credentials:
       properties:
@@ -94,6 +136,30 @@ components:
           type: string
       required:
       - expiresAt
+      type: object
+    Store:
+      properties:
+        approved:
+          type: boolean
+        id:
+          type: integer
+          x-go-name: ID
+        name:
+          type: string
+      required:
+      - id
+      - name
+      - approved
+      type: object
+    UpdateStore:
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        approved:
+          type: boolean
+        name:
+          minLength: 1
+          type: string
       type: object
     User:
       properties:
@@ -272,5 +338,127 @@ paths:
               schema:
                 $ref: "#/components/schemas/OrdersPlaceholder"
           description: Placeholder response for the future orders API
+      security:
+      - SessionAuth: []
+  /users/{userId}/stores:
+    get:
+      operationId: listStores
+      parameters:
+      - description: Shop lists approved global stores; manage lists stores administered by this user, including unapproved stores. Both exclude deleted stores. Admin lists stores administered by this user, including unapproved and deleted stores.
+        in: query
+        name: for
+        schema:
+          default: shop
+          enum:
+          - admin
+          - manage
+          - shop
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/Store"
+                type: array
+          description: Stores ordered by ID
+        "401":
+          $ref: "#/components/responses/StoreUnauthorized"
+        "403":
+          $ref: "#/components/responses/StoreForbidden"
+      security:
+      - SessionAuth: []
+    parameters:
+    - $ref: "#/components/parameters/StoreUserId"
+    post:
+      description: Creates an unapproved global store and makes the requesting user its StoreAdmin.
+      operationId: createStore
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStore"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Store"
+          description: Store created
+        "400":
+          $ref: "#/components/responses/StoreBadRequest"
+        "401":
+          $ref: "#/components/responses/StoreUnauthorized"
+        "403":
+          $ref: "#/components/responses/StoreForbidden"
+      security:
+      - SessionAuth: []
+  /users/{userId}/stores/{storeId}:
+    delete:
+      description: Soft-deletes a store administered by the requesting user, retaining its StoreAdmin memberships.
+      operationId: deleteStore
+      responses:
+        "204":
+          description: Store deleted
+        "401":
+          $ref: "#/components/responses/StoreUnauthorized"
+        "403":
+          $ref: "#/components/responses/StoreForbidden"
+        "404":
+          $ref: "#/components/responses/StoreNotFound"
+      security:
+      - SessionAuth: []
+    get:
+      description: Returns an approved store, or an unapproved store if the user administers it.
+      operationId: getStore
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Store"
+          description: Store
+        "401":
+          $ref: "#/components/responses/StoreUnauthorized"
+        "403":
+          $ref: "#/components/responses/StoreForbidden"
+        "404":
+          $ref: "#/components/responses/StoreNotFound"
+      security:
+      - SessionAuth: []
+    parameters:
+    - $ref: "#/components/parameters/StoreUserId"
+    - in: path
+      name: storeId
+      required: true
+      schema:
+        minimum: 1.0
+        type: integer
+    patch:
+      description: Updates a store administered by the requesting user.
+      operationId: updateStore
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStore"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Store"
+          description: Store updated
+        "400":
+          $ref: "#/components/responses/StoreBadRequest"
+        "401":
+          $ref: "#/components/responses/StoreUnauthorized"
+        "403":
+          $ref: "#/components/responses/StoreForbidden"
+        "404":
+          $ref: "#/components/responses/StoreNotFound"
       security:
       - SessionAuth: []

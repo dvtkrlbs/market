@@ -14,6 +14,8 @@ import (
 	"github.com/dvtkrlbs/market/internal/ent/entry"
 	"github.com/dvtkrlbs/market/internal/ent/predicate"
 	"github.com/dvtkrlbs/market/internal/ent/session"
+	"github.com/dvtkrlbs/market/internal/ent/store"
+	"github.com/dvtkrlbs/market/internal/ent/storeadmin"
 	"github.com/dvtkrlbs/market/internal/ent/user"
 )
 
@@ -26,9 +28,11 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeEntry   = "Entry"
-	TypeSession = "Session"
-	TypeUser    = "User"
+	TypeEntry      = "Entry"
+	TypeSession    = "Session"
+	TypeStore      = "Store"
+	TypeStoreAdmin = "StoreAdmin"
+	TypeUser       = "User"
 )
 
 // EntryMutation represents an operation that mutates the Entry nodes in the graph.
@@ -1328,23 +1332,1058 @@ func (m *SessionMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown Session edge %s", name)
 }
 
+// StoreMutation represents an operation that mutates the Store nodes in the graph.
+type StoreMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *int
+	name          *string
+	approved      *bool
+	deleted_at    *time.Time
+	clearedFields map[string]struct{}
+	admins        map[int]struct{}
+	removedadmins map[int]struct{}
+	clearedadmins bool
+	done          bool
+	oldValue      func(context.Context) (*Store, error)
+	predicates    []predicate.Store
+}
+
+var _ ent.Mutation = (*StoreMutation)(nil)
+
+// storeOption allows management of the mutation configuration using functional options.
+type storeOption func(*StoreMutation)
+
+// newStoreMutation creates new mutation for the Store entity.
+func newStoreMutation(c config, op Op, opts ...storeOption) *StoreMutation {
+	m := &StoreMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeStore,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withStoreID sets the ID field of the mutation.
+func withStoreID(id int) storeOption {
+	return func(m *StoreMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Store
+		)
+		m.oldValue = func(ctx context.Context) (*Store, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Store.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withStore sets the old Store of the mutation.
+func withStore(node *Store) storeOption {
+	return func(m *StoreMutation) {
+		m.oldValue = func(context.Context) (*Store, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m StoreMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m StoreMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *StoreMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *StoreMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Store.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetName sets the "name" field.
+func (m *StoreMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *StoreMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the Store entity.
+// If the Store object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *StoreMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *StoreMutation) ResetName() {
+	m.name = nil
+}
+
+// SetApproved sets the "approved" field.
+func (m *StoreMutation) SetApproved(b bool) {
+	m.approved = &b
+}
+
+// Approved returns the value of the "approved" field in the mutation.
+func (m *StoreMutation) Approved() (r bool, exists bool) {
+	v := m.approved
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldApproved returns the old "approved" field's value of the Store entity.
+// If the Store object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *StoreMutation) OldApproved(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldApproved is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldApproved requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldApproved: %w", err)
+	}
+	return oldValue.Approved, nil
+}
+
+// ResetApproved resets all changes to the "approved" field.
+func (m *StoreMutation) ResetApproved() {
+	m.approved = nil
+}
+
+// SetDeletedAt sets the "deleted_at" field.
+func (m *StoreMutation) SetDeletedAt(t time.Time) {
+	m.deleted_at = &t
+}
+
+// DeletedAt returns the value of the "deleted_at" field in the mutation.
+func (m *StoreMutation) DeletedAt() (r time.Time, exists bool) {
+	v := m.deleted_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDeletedAt returns the old "deleted_at" field's value of the Store entity.
+// If the Store object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *StoreMutation) OldDeletedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDeletedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDeletedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDeletedAt: %w", err)
+	}
+	return oldValue.DeletedAt, nil
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (m *StoreMutation) ClearDeletedAt() {
+	m.deleted_at = nil
+	m.clearedFields[store.FieldDeletedAt] = struct{}{}
+}
+
+// DeletedAtCleared returns if the "deleted_at" field was cleared in this mutation.
+func (m *StoreMutation) DeletedAtCleared() bool {
+	_, ok := m.clearedFields[store.FieldDeletedAt]
+	return ok
+}
+
+// ResetDeletedAt resets all changes to the "deleted_at" field.
+func (m *StoreMutation) ResetDeletedAt() {
+	m.deleted_at = nil
+	delete(m.clearedFields, store.FieldDeletedAt)
+}
+
+// AddAdminIDs adds the "admins" edge to the StoreAdmin entity by ids.
+func (m *StoreMutation) AddAdminIDs(ids ...int) {
+	if m.admins == nil {
+		m.admins = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.admins[ids[i]] = struct{}{}
+	}
+}
+
+// ClearAdmins clears the "admins" edge to the StoreAdmin entity.
+func (m *StoreMutation) ClearAdmins() {
+	m.clearedadmins = true
+}
+
+// AdminsCleared reports if the "admins" edge to the StoreAdmin entity was cleared.
+func (m *StoreMutation) AdminsCleared() bool {
+	return m.clearedadmins
+}
+
+// RemoveAdminIDs removes the "admins" edge to the StoreAdmin entity by IDs.
+func (m *StoreMutation) RemoveAdminIDs(ids ...int) {
+	if m.removedadmins == nil {
+		m.removedadmins = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.admins, ids[i])
+		m.removedadmins[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedAdmins returns the removed IDs of the "admins" edge to the StoreAdmin entity.
+func (m *StoreMutation) RemovedAdminsIDs() (ids []int) {
+	for id := range m.removedadmins {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// AdminsIDs returns the "admins" edge IDs in the mutation.
+func (m *StoreMutation) AdminsIDs() (ids []int) {
+	for id := range m.admins {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetAdmins resets all changes to the "admins" edge.
+func (m *StoreMutation) ResetAdmins() {
+	m.admins = nil
+	m.clearedadmins = false
+	m.removedadmins = nil
+}
+
+// Where appends a list predicates to the StoreMutation builder.
+func (m *StoreMutation) Where(ps ...predicate.Store) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the StoreMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *StoreMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Store, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *StoreMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *StoreMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (Store).
+func (m *StoreMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *StoreMutation) Fields() []string {
+	fields := make([]string, 0, 3)
+	if m.name != nil {
+		fields = append(fields, store.FieldName)
+	}
+	if m.approved != nil {
+		fields = append(fields, store.FieldApproved)
+	}
+	if m.deleted_at != nil {
+		fields = append(fields, store.FieldDeletedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *StoreMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case store.FieldName:
+		return m.Name()
+	case store.FieldApproved:
+		return m.Approved()
+	case store.FieldDeletedAt:
+		return m.DeletedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *StoreMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case store.FieldName:
+		return m.OldName(ctx)
+	case store.FieldApproved:
+		return m.OldApproved(ctx)
+	case store.FieldDeletedAt:
+		return m.OldDeletedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown Store field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *StoreMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case store.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case store.FieldApproved:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetApproved(v)
+		return nil
+	case store.FieldDeletedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDeletedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Store field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *StoreMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *StoreMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *StoreMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Store numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *StoreMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(store.FieldDeletedAt) {
+		fields = append(fields, store.FieldDeletedAt)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *StoreMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *StoreMutation) ClearField(name string) error {
+	switch name {
+	case store.FieldDeletedAt:
+		m.ClearDeletedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown Store nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *StoreMutation) ResetField(name string) error {
+	switch name {
+	case store.FieldName:
+		m.ResetName()
+		return nil
+	case store.FieldApproved:
+		m.ResetApproved()
+		return nil
+	case store.FieldDeletedAt:
+		m.ResetDeletedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown Store field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *StoreMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.admins != nil {
+		edges = append(edges, store.EdgeAdmins)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *StoreMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case store.EdgeAdmins:
+		ids := make([]ent.Value, 0, len(m.admins))
+		for id := range m.admins {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *StoreMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.removedadmins != nil {
+		edges = append(edges, store.EdgeAdmins)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *StoreMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case store.EdgeAdmins:
+		ids := make([]ent.Value, 0, len(m.removedadmins))
+		for id := range m.removedadmins {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *StoreMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedadmins {
+		edges = append(edges, store.EdgeAdmins)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *StoreMutation) EdgeCleared(name string) bool {
+	switch name {
+	case store.EdgeAdmins:
+		return m.clearedadmins
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *StoreMutation) ClearEdge(name string) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Store unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *StoreMutation) ResetEdge(name string) error {
+	switch name {
+	case store.EdgeAdmins:
+		m.ResetAdmins()
+		return nil
+	}
+	return fmt.Errorf("unknown Store edge %s", name)
+}
+
+// StoreAdminMutation represents an operation that mutates the StoreAdmin nodes in the graph.
+type StoreAdminMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *int
+	clearedFields map[string]struct{}
+	user          *int
+	cleareduser   bool
+	store         *int
+	clearedstore  bool
+	done          bool
+	oldValue      func(context.Context) (*StoreAdmin, error)
+	predicates    []predicate.StoreAdmin
+}
+
+var _ ent.Mutation = (*StoreAdminMutation)(nil)
+
+// storeadminOption allows management of the mutation configuration using functional options.
+type storeadminOption func(*StoreAdminMutation)
+
+// newStoreAdminMutation creates new mutation for the StoreAdmin entity.
+func newStoreAdminMutation(c config, op Op, opts ...storeadminOption) *StoreAdminMutation {
+	m := &StoreAdminMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeStoreAdmin,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withStoreAdminID sets the ID field of the mutation.
+func withStoreAdminID(id int) storeadminOption {
+	return func(m *StoreAdminMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *StoreAdmin
+		)
+		m.oldValue = func(ctx context.Context) (*StoreAdmin, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().StoreAdmin.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withStoreAdmin sets the old StoreAdmin of the mutation.
+func withStoreAdmin(node *StoreAdmin) storeadminOption {
+	return func(m *StoreAdminMutation) {
+		m.oldValue = func(context.Context) (*StoreAdmin, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m StoreAdminMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m StoreAdminMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *StoreAdminMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *StoreAdminMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().StoreAdmin.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetUserID sets the "user_id" field.
+func (m *StoreAdminMutation) SetUserID(i int) {
+	m.user = &i
+}
+
+// UserID returns the value of the "user_id" field in the mutation.
+func (m *StoreAdminMutation) UserID() (r int, exists bool) {
+	v := m.user
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUserID returns the old "user_id" field's value of the StoreAdmin entity.
+// If the StoreAdmin object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *StoreAdminMutation) OldUserID(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUserID: %w", err)
+	}
+	return oldValue.UserID, nil
+}
+
+// ResetUserID resets all changes to the "user_id" field.
+func (m *StoreAdminMutation) ResetUserID() {
+	m.user = nil
+}
+
+// SetStoreID sets the "store_id" field.
+func (m *StoreAdminMutation) SetStoreID(i int) {
+	m.store = &i
+}
+
+// StoreID returns the value of the "store_id" field in the mutation.
+func (m *StoreAdminMutation) StoreID() (r int, exists bool) {
+	v := m.store
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStoreID returns the old "store_id" field's value of the StoreAdmin entity.
+// If the StoreAdmin object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *StoreAdminMutation) OldStoreID(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStoreID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStoreID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStoreID: %w", err)
+	}
+	return oldValue.StoreID, nil
+}
+
+// ResetStoreID resets all changes to the "store_id" field.
+func (m *StoreAdminMutation) ResetStoreID() {
+	m.store = nil
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *StoreAdminMutation) ClearUser() {
+	m.cleareduser = true
+	m.clearedFields[storeadmin.FieldUserID] = struct{}{}
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *StoreAdminMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *StoreAdminMutation) UserIDs() (ids []int) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *StoreAdminMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// ClearStore clears the "store" edge to the Store entity.
+func (m *StoreAdminMutation) ClearStore() {
+	m.clearedstore = true
+	m.clearedFields[storeadmin.FieldStoreID] = struct{}{}
+}
+
+// StoreCleared reports if the "store" edge to the Store entity was cleared.
+func (m *StoreAdminMutation) StoreCleared() bool {
+	return m.clearedstore
+}
+
+// StoreIDs returns the "store" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// StoreID instead. It exists only for internal usage by the builders.
+func (m *StoreAdminMutation) StoreIDs() (ids []int) {
+	if id := m.store; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetStore resets all changes to the "store" edge.
+func (m *StoreAdminMutation) ResetStore() {
+	m.store = nil
+	m.clearedstore = false
+}
+
+// Where appends a list predicates to the StoreAdminMutation builder.
+func (m *StoreAdminMutation) Where(ps ...predicate.StoreAdmin) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the StoreAdminMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *StoreAdminMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.StoreAdmin, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *StoreAdminMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *StoreAdminMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (StoreAdmin).
+func (m *StoreAdminMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *StoreAdminMutation) Fields() []string {
+	fields := make([]string, 0, 2)
+	if m.user != nil {
+		fields = append(fields, storeadmin.FieldUserID)
+	}
+	if m.store != nil {
+		fields = append(fields, storeadmin.FieldStoreID)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *StoreAdminMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case storeadmin.FieldUserID:
+		return m.UserID()
+	case storeadmin.FieldStoreID:
+		return m.StoreID()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *StoreAdminMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case storeadmin.FieldUserID:
+		return m.OldUserID(ctx)
+	case storeadmin.FieldStoreID:
+		return m.OldStoreID(ctx)
+	}
+	return nil, fmt.Errorf("unknown StoreAdmin field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *StoreAdminMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case storeadmin.FieldUserID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUserID(v)
+		return nil
+	case storeadmin.FieldStoreID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStoreID(v)
+		return nil
+	}
+	return fmt.Errorf("unknown StoreAdmin field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *StoreAdminMutation) AddedFields() []string {
+	var fields []string
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *StoreAdminMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *StoreAdminMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown StoreAdmin numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *StoreAdminMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *StoreAdminMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *StoreAdminMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown StoreAdmin nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *StoreAdminMutation) ResetField(name string) error {
+	switch name {
+	case storeadmin.FieldUserID:
+		m.ResetUserID()
+		return nil
+	case storeadmin.FieldStoreID:
+		m.ResetStoreID()
+		return nil
+	}
+	return fmt.Errorf("unknown StoreAdmin field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *StoreAdminMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.user != nil {
+		edges = append(edges, storeadmin.EdgeUser)
+	}
+	if m.store != nil {
+		edges = append(edges, storeadmin.EdgeStore)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *StoreAdminMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case storeadmin.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	case storeadmin.EdgeStore:
+		if id := m.store; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *StoreAdminMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *StoreAdminMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *StoreAdminMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.cleareduser {
+		edges = append(edges, storeadmin.EdgeUser)
+	}
+	if m.clearedstore {
+		edges = append(edges, storeadmin.EdgeStore)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *StoreAdminMutation) EdgeCleared(name string) bool {
+	switch name {
+	case storeadmin.EdgeUser:
+		return m.cleareduser
+	case storeadmin.EdgeStore:
+		return m.clearedstore
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *StoreAdminMutation) ClearEdge(name string) error {
+	switch name {
+	case storeadmin.EdgeUser:
+		m.ClearUser()
+		return nil
+	case storeadmin.EdgeStore:
+		m.ClearStore()
+		return nil
+	}
+	return fmt.Errorf("unknown StoreAdmin unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *StoreAdminMutation) ResetEdge(name string) error {
+	switch name {
+	case storeadmin.EdgeUser:
+		m.ResetUser()
+		return nil
+	case storeadmin.EdgeStore:
+		m.ResetStore()
+		return nil
+	}
+	return fmt.Errorf("unknown StoreAdmin edge %s", name)
+}
+
 // UserMutation represents an operation that mutates the User nodes in the graph.
 type UserMutation struct {
 	config
-	op              Op
-	typ             string
-	id              *int
-	email           *string
-	password_hash   *string
-	created_at      *time.Time
-	deleted_at      *time.Time
-	clearedFields   map[string]struct{}
-	sessions        map[string]struct{}
-	removedsessions map[string]struct{}
-	clearedsessions bool
-	done            bool
-	oldValue        func(context.Context) (*User, error)
-	predicates      []predicate.User
+	op                  Op
+	typ                 string
+	id                  *int
+	email               *string
+	password_hash       *string
+	created_at          *time.Time
+	deleted_at          *time.Time
+	clearedFields       map[string]struct{}
+	sessions            map[string]struct{}
+	removedsessions     map[string]struct{}
+	clearedsessions     bool
+	store_admins        map[int]struct{}
+	removedstore_admins map[int]struct{}
+	clearedstore_admins bool
+	done                bool
+	oldValue            func(context.Context) (*User, error)
+	predicates          []predicate.User
 }
 
 var _ ent.Mutation = (*UserMutation)(nil)
@@ -1656,6 +2695,60 @@ func (m *UserMutation) ResetSessions() {
 	m.removedsessions = nil
 }
 
+// AddStoreAdminIDs adds the "store_admins" edge to the StoreAdmin entity by ids.
+func (m *UserMutation) AddStoreAdminIDs(ids ...int) {
+	if m.store_admins == nil {
+		m.store_admins = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.store_admins[ids[i]] = struct{}{}
+	}
+}
+
+// ClearStoreAdmins clears the "store_admins" edge to the StoreAdmin entity.
+func (m *UserMutation) ClearStoreAdmins() {
+	m.clearedstore_admins = true
+}
+
+// StoreAdminsCleared reports if the "store_admins" edge to the StoreAdmin entity was cleared.
+func (m *UserMutation) StoreAdminsCleared() bool {
+	return m.clearedstore_admins
+}
+
+// RemoveStoreAdminIDs removes the "store_admins" edge to the StoreAdmin entity by IDs.
+func (m *UserMutation) RemoveStoreAdminIDs(ids ...int) {
+	if m.removedstore_admins == nil {
+		m.removedstore_admins = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.store_admins, ids[i])
+		m.removedstore_admins[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedStoreAdmins returns the removed IDs of the "store_admins" edge to the StoreAdmin entity.
+func (m *UserMutation) RemovedStoreAdminsIDs() (ids []int) {
+	for id := range m.removedstore_admins {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// StoreAdminsIDs returns the "store_admins" edge IDs in the mutation.
+func (m *UserMutation) StoreAdminsIDs() (ids []int) {
+	for id := range m.store_admins {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetStoreAdmins resets all changes to the "store_admins" edge.
+func (m *UserMutation) ResetStoreAdmins() {
+	m.store_admins = nil
+	m.clearedstore_admins = false
+	m.removedstore_admins = nil
+}
+
 // Where appends a list predicates to the UserMutation builder.
 func (m *UserMutation) Where(ps ...predicate.User) {
 	m.predicates = append(m.predicates, ps...)
@@ -1849,9 +2942,12 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.sessions != nil {
 		edges = append(edges, user.EdgeSessions)
+	}
+	if m.store_admins != nil {
+		edges = append(edges, user.EdgeStoreAdmins)
 	}
 	return edges
 }
@@ -1866,15 +2962,24 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeStoreAdmins:
+		ids := make([]ent.Value, 0, len(m.store_admins))
+		for id := range m.store_admins {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.removedsessions != nil {
 		edges = append(edges, user.EdgeSessions)
+	}
+	if m.removedstore_admins != nil {
+		edges = append(edges, user.EdgeStoreAdmins)
 	}
 	return edges
 }
@@ -1889,15 +2994,24 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeStoreAdmins:
+		ids := make([]ent.Value, 0, len(m.removedstore_admins))
+		for id := range m.removedstore_admins {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.clearedsessions {
 		edges = append(edges, user.EdgeSessions)
+	}
+	if m.clearedstore_admins {
+		edges = append(edges, user.EdgeStoreAdmins)
 	}
 	return edges
 }
@@ -1908,6 +3022,8 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 	switch name {
 	case user.EdgeSessions:
 		return m.clearedsessions
+	case user.EdgeStoreAdmins:
+		return m.clearedstore_admins
 	}
 	return false
 }
@@ -1926,6 +3042,9 @@ func (m *UserMutation) ResetEdge(name string) error {
 	switch name {
 	case user.EdgeSessions:
 		m.ResetSessions()
+		return nil
+	case user.EdgeStoreAdmins:
+		m.ResetStoreAdmins()
 		return nil
 	}
 	return fmt.Errorf("unknown User edge %s", name)

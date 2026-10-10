@@ -23,7 +23,9 @@ func TestCORSRequests(t *testing.T) {
 		{"denied origin", "http://untrusted.example", http.MethodPost, "", "", http.StatusForbidden, false},
 		{"preflight", "http://localhost:5176", http.MethodOptions, http.MethodPost, "content-type", http.StatusNoContent, false},
 		{"custom header preflight", "http://localhost:5176", http.MethodOptions, http.MethodGet, "Content-Type, X-Request-Id", http.StatusNoContent, false},
-		{"denied preflight method", "http://localhost:5176", http.MethodOptions, http.MethodDelete, "", http.StatusMethodNotAllowed, false},
+		{"store update preflight", "http://localhost:5176", http.MethodOptions, http.MethodPatch, "content-type", http.StatusNoContent, false},
+		{"store delete preflight", "http://localhost:5176", http.MethodOptions, http.MethodDelete, "", http.StatusNoContent, false},
+		{"denied preflight method", "http://localhost:5176", http.MethodOptions, http.MethodPut, "", http.StatusMethodNotAllowed, false},
 		{"denied preflight header", "http://localhost:5176", http.MethodOptions, http.MethodPost, "authorization", http.StatusForbidden, false},
 	} {
 		t.Run(tt.name, func(t *testing.T) {

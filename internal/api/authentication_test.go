@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"net/http"
 	"net/http/httptest"
@@ -10,6 +11,15 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3filter"
 )
+
+func testCookieSigner(t *testing.T) *authservice.CookieSigner {
+	t.Helper()
+	signer, err := authservice.NewCookieSigner(bytes.Repeat([]byte{1}, 32))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return signer
+}
 
 func TestAuthenticationRejectsMissingOrInvalidSessionCookies(t *testing.T) {
 	resolve := authenticationResolver(authservice.New(nil), testCookieSigner(t))

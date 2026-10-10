@@ -44,7 +44,7 @@ func WithCORS(next http.Handler, origins []string) (http.Handler, error) {
 			w.Header().Add("Vary", "Access-Control-Request-Method")
 			w.Header().Add("Vary", "Access-Control-Request-Headers")
 			switch request.Header.Get("Access-Control-Request-Method") {
-			case http.MethodGet, http.MethodHead, http.MethodPost:
+			case http.MethodGet, http.MethodHead, http.MethodPost, http.MethodPatch, http.MethodDelete:
 			default:
 				writeAPIError(w, http.StatusMethodNotAllowed, "CORS method not allowed")
 				return
@@ -57,7 +57,7 @@ func WithCORS(next http.Handler, origins []string) (http.Handler, error) {
 					return
 				}
 			}
-			w.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, POST")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, POST, PATCH, DELETE")
 			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-Request-ID")
 			w.WriteHeader(http.StatusNoContent)
 			return

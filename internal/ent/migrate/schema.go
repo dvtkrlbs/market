@@ -59,6 +59,57 @@ var (
 			},
 		},
 	}
+	// StoresColumns holds the columns for the "stores" table.
+	StoresColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "approved", Type: field.TypeBool, Default: false},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+	}
+	// StoresTable holds the schema information for the "stores" table.
+	StoresTable = &schema.Table{
+		Name:       "stores",
+		Columns:    StoresColumns,
+		PrimaryKey: []*schema.Column{StoresColumns[0]},
+	}
+	// StoreAdminsColumns holds the columns for the "store_admins" table.
+	StoreAdminsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "store_id", Type: field.TypeInt},
+		{Name: "user_id", Type: field.TypeInt},
+	}
+	// StoreAdminsTable holds the schema information for the "store_admins" table.
+	StoreAdminsTable = &schema.Table{
+		Name:       "store_admins",
+		Columns:    StoreAdminsColumns,
+		PrimaryKey: []*schema.Column{StoreAdminsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "store_admins_stores_admins",
+				Columns:    []*schema.Column{StoreAdminsColumns[1]},
+				RefColumns: []*schema.Column{StoresColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "store_admins_users_store_admins",
+				Columns:    []*schema.Column{StoreAdminsColumns[2]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "storeadmin_user_id_store_id",
+				Unique:  true,
+				Columns: []*schema.Column{StoreAdminsColumns[2], StoreAdminsColumns[1]},
+			},
+			{
+				Name:    "storeadmin_store_id",
+				Unique:  false,
+				Columns: []*schema.Column{StoreAdminsColumns[1]},
+			},
+		},
+	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -77,10 +128,14 @@ var (
 	Tables = []*schema.Table{
 		EntriesTable,
 		SessionsTable,
+		StoresTable,
+		StoreAdminsTable,
 		UsersTable,
 	}
 )
 
 func init() {
 	SessionsTable.ForeignKeys[0].RefTable = UsersTable
+	StoreAdminsTable.ForeignKeys[0].RefTable = StoresTable
+	StoreAdminsTable.ForeignKeys[1].RefTable = UsersTable
 }

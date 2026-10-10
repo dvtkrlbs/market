@@ -20,6 +20,7 @@ import (
 	"github.com/dvtkrlbs/market/internal/bookkeeping"
 	"github.com/dvtkrlbs/market/internal/database"
 	"github.com/dvtkrlbs/market/internal/money"
+	"github.com/dvtkrlbs/market/internal/stores"
 )
 
 const defaultDatabaseURL = "postgres://market:market@localhost:5432/market?sslmode=disable"
@@ -58,7 +59,7 @@ func run(args []string) error {
 
 	switch args[0] {
 	case "serve":
-		return serve(service, authentication, args[1:])
+		return serve(service, authentication, stores.New(client), args[1:])
 	case "add":
 		return add(service, args[1:])
 	case "list":
@@ -68,7 +69,7 @@ func run(args []string) error {
 	}
 }
 
-func serve(service *bookkeeping.Service, authentication *auth.Service, args []string) error {
+func serve(service *bookkeeping.Service, authentication *auth.Service, storeService *stores.Service, args []string) error {
 	flags := flag.NewFlagSet("serve", flag.ContinueOnError)
 	addr := flags.String("addr", envOr("HTTP_ADDR", ":8080"), "HTTP listen address")
 	if err := flags.Parse(args); err != nil {
@@ -83,7 +84,7 @@ func serve(service *bookkeeping.Service, authentication *auth.Service, args []st
 	if err != nil {
 		return fmt.Errorf("SESSION_SIGNING_KEY: %w", err)
 	}
-	handler, err := api.NewRouter(service, authentication, signer)
+	handler, err := api.NewRouter(service, authentication, signer, storeService)
 	if err != nil {
 		return err
 	}

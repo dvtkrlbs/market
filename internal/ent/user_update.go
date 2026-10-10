@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/dvtkrlbs/market/internal/ent/predicate"
 	"github.com/dvtkrlbs/market/internal/ent/session"
+	"github.com/dvtkrlbs/market/internal/ent/storeadmin"
 	"github.com/dvtkrlbs/market/internal/ent/user"
 )
 
@@ -92,6 +93,21 @@ func (_u *UserUpdate) AddSessions(v ...*Session) *UserUpdate {
 	return _u.AddSessionIDs(ids...)
 }
 
+// AddStoreAdminIDs adds the "store_admins" edge to the StoreAdmin entity by IDs.
+func (_u *UserUpdate) AddStoreAdminIDs(ids ...int) *UserUpdate {
+	_u.mutation.AddStoreAdminIDs(ids...)
+	return _u
+}
+
+// AddStoreAdmins adds the "store_admins" edges to the StoreAdmin entity.
+func (_u *UserUpdate) AddStoreAdmins(v ...*StoreAdmin) *UserUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddStoreAdminIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (_u *UserUpdate) Mutation() *UserMutation {
 	return _u.mutation
@@ -116,6 +132,27 @@ func (_u *UserUpdate) RemoveSessions(v ...*Session) *UserUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveSessionIDs(ids...)
+}
+
+// ClearStoreAdmins clears all "store_admins" edges to the StoreAdmin entity.
+func (_u *UserUpdate) ClearStoreAdmins() *UserUpdate {
+	_u.mutation.ClearStoreAdmins()
+	return _u
+}
+
+// RemoveStoreAdminIDs removes the "store_admins" edge to StoreAdmin entities by IDs.
+func (_u *UserUpdate) RemoveStoreAdminIDs(ids ...int) *UserUpdate {
+	_u.mutation.RemoveStoreAdminIDs(ids...)
+	return _u
+}
+
+// RemoveStoreAdmins removes "store_admins" edges to StoreAdmin entities.
+func (_u *UserUpdate) RemoveStoreAdmins(v ...*StoreAdmin) *UserUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveStoreAdminIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -224,6 +261,51 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.StoreAdminsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.StoreAdminsTable,
+			Columns: []string{user.StoreAdminsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(storeadmin.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedStoreAdminsIDs(); len(nodes) > 0 && !_u.mutation.StoreAdminsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.StoreAdminsTable,
+			Columns: []string{user.StoreAdminsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(storeadmin.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.StoreAdminsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.StoreAdminsTable,
+			Columns: []string{user.StoreAdminsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(storeadmin.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -307,6 +389,21 @@ func (_u *UserUpdateOne) AddSessions(v ...*Session) *UserUpdateOne {
 	return _u.AddSessionIDs(ids...)
 }
 
+// AddStoreAdminIDs adds the "store_admins" edge to the StoreAdmin entity by IDs.
+func (_u *UserUpdateOne) AddStoreAdminIDs(ids ...int) *UserUpdateOne {
+	_u.mutation.AddStoreAdminIDs(ids...)
+	return _u
+}
+
+// AddStoreAdmins adds the "store_admins" edges to the StoreAdmin entity.
+func (_u *UserUpdateOne) AddStoreAdmins(v ...*StoreAdmin) *UserUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddStoreAdminIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (_u *UserUpdateOne) Mutation() *UserMutation {
 	return _u.mutation
@@ -331,6 +428,27 @@ func (_u *UserUpdateOne) RemoveSessions(v ...*Session) *UserUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveSessionIDs(ids...)
+}
+
+// ClearStoreAdmins clears all "store_admins" edges to the StoreAdmin entity.
+func (_u *UserUpdateOne) ClearStoreAdmins() *UserUpdateOne {
+	_u.mutation.ClearStoreAdmins()
+	return _u
+}
+
+// RemoveStoreAdminIDs removes the "store_admins" edge to StoreAdmin entities by IDs.
+func (_u *UserUpdateOne) RemoveStoreAdminIDs(ids ...int) *UserUpdateOne {
+	_u.mutation.RemoveStoreAdminIDs(ids...)
+	return _u
+}
+
+// RemoveStoreAdmins removes "store_admins" edges to StoreAdmin entities.
+func (_u *UserUpdateOne) RemoveStoreAdmins(v ...*StoreAdmin) *UserUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveStoreAdminIDs(ids...)
 }
 
 // Where appends a list predicates to the UserUpdate builder.
@@ -462,6 +580,51 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(session.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.StoreAdminsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.StoreAdminsTable,
+			Columns: []string{user.StoreAdminsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(storeadmin.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedStoreAdminsIDs(); len(nodes) > 0 && !_u.mutation.StoreAdminsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.StoreAdminsTable,
+			Columns: []string{user.StoreAdminsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(storeadmin.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.StoreAdminsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.StoreAdminsTable,
+			Columns: []string{user.StoreAdminsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(storeadmin.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

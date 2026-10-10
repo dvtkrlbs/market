@@ -1,0 +1,10 @@
+package: stores
+output: ../internal/api/stores/generated.gen.go
+generate:
+  models: true
+  std-http-server: true
+  strict-server: true
+output-options:
+  skip-prune: true
+import-mapping:
+  ../common/openapi.yaml: github.com/dvtkrlbs/market/internal/api/common

@@ -8,6 +8,8 @@ func TestInitialMigrationIsEmbedded(t *testing.T) {
 		"20261007000000_init.down.sql",
 		"20261007000001_auth.up.sql",
 		"20261007000001_auth.down.sql",
+		"20261010000000_stores.up.sql",
+		"20261010000000_stores.down.sql",
 	} {
 		if _, err := FS.ReadFile(name); err != nil {
 			t.Fatalf("read embedded migration %q: %v", name, err)

@@ -12,5 +12,11 @@ type Entry func(*sql.Selector)
 // Session is the predicate function for session builders.
 type Session func(*sql.Selector)
 
+// Store is the predicate function for store builders.
+type Store func(*sql.Selector)
+
+// StoreAdmin is the predicate function for storeadmin builders.
+type StoreAdmin func(*sql.Selector)
+
 // User is the predicate function for user builders.
 type User func(*sql.Selector)

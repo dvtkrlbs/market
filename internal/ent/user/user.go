@@ -24,6 +24,8 @@ const (
 	FieldDeletedAt = "deleted_at"
 	// EdgeSessions holds the string denoting the sessions edge name in mutations.
 	EdgeSessions = "sessions"
+	// EdgeStoreAdmins holds the string denoting the store_admins edge name in mutations.
+	EdgeStoreAdmins = "store_admins"
 	// SessionFieldID holds the string denoting the ID field of the Session.
 	SessionFieldID = "session_id"
 	// Table holds the table name of the user in the database.
@@ -35,6 +37,13 @@ const (
 	SessionsInverseTable = "sessions"
 	// SessionsColumn is the table column denoting the sessions relation/edge.
 	SessionsColumn = "user_id"
+	// StoreAdminsTable is the table that holds the store_admins relation/edge.
+	StoreAdminsTable = "store_admins"
+	// StoreAdminsInverseTable is the table name for the StoreAdmin entity.
+	// It exists in this package in order to avoid circular dependency with the "storeadmin" package.
+	StoreAdminsInverseTable = "store_admins"
+	// StoreAdminsColumn is the table column denoting the store_admins relation/edge.
+	StoreAdminsColumn = "user_id"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -104,10 +113,31 @@ func BySessions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newSessionsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByStoreAdminsCount orders the results by store_admins count.
+func ByStoreAdminsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newStoreAdminsStep(), opts...)
+	}
+}
+
+// ByStoreAdmins orders the results by store_admins terms.
+func ByStoreAdmins(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newStoreAdminsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newSessionsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(SessionsInverseTable, SessionFieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, SessionsTable, SessionsColumn),
+	)
+}
+func newStoreAdminsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(StoreAdminsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, StoreAdminsTable, StoreAdminsColumn),
 	)
 }
