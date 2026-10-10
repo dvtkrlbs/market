@@ -7,7 +7,7 @@ paths:
     get:
       operationId: getOrdersPlaceholder
       security:
-        - BearerAuth: []
+        - SessionAuth: []
       responses:
         "200":
           description: Placeholder response for the future orders API
@@ -17,8 +17,8 @@ paths:
                 $ref: "#/components/schemas/OrdersPlaceholder"
 components:
   securitySchemes:
-    BearerAuth:
-      $ref: "../common/openapi.yaml#/components/securitySchemes/BearerAuth"
+    SessionAuth:
+      $ref: "../common/openapi.yaml#/components/securitySchemes/SessionAuth"
   schemas:
     OrdersPlaceholder:
       type: object

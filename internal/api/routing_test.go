@@ -1,13 +1,31 @@
 package api
 
 import (
+	"bytes"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	authservice "github.com/dvtkrlbs/market/internal/auth"
 )
 
+func testCookieSigner(t *testing.T) *authservice.CookieSigner {
+	t.Helper()
+	signer, err := authservice.NewCookieSigner(bytes.Repeat([]byte{1}, 32))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return signer
+}
+
+func TestRouterRequiresCookieSigner(t *testing.T) {
+	if _, err := NewRouter(nil, nil, nil); err == nil {
+		t.Fatal("expected error without a cookie signer")
+	}
+}
+
 func TestHandlerRouting(t *testing.T) {
-	handler, err := NewRouter(nil, nil)
+	handler, err := NewRouter(nil, nil, testCookieSigner(t))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,7 +55,7 @@ func TestHandlerRouting(t *testing.T) {
 }
 
 func TestHandlerHealth(t *testing.T) {
-	handler, err := NewRouter(nil, nil)
+	handler, err := NewRouter(nil, nil, testCookieSigner(t))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,7 +70,7 @@ func TestHandlerHealth(t *testing.T) {
 }
 
 func TestHandlerOrdersPlaceholder(t *testing.T) {
-	handler, err := NewRouter(nil, nil)
+	handler, err := NewRouter(nil, nil, testCookieSigner(t))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -67,7 +85,7 @@ func TestHandlerOrdersPlaceholder(t *testing.T) {
 }
 
 func TestAuthRoutesArePublicOrProtectedAsDocumented(t *testing.T) {
-	handler, err := NewRouter(nil, nil)
+	handler, err := NewRouter(nil, nil, testCookieSigner(t))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,8 +109,8 @@ func TestAuthRoutesArePublicOrProtectedAsDocumented(t *testing.T) {
 			if response.Code != tt.status {
 				t.Fatalf("status = %d, want %d; body = %s", response.Code, tt.status, response.Body.String())
 			}
-			if tt.status == http.StatusUnauthorized && response.Header().Get("WWW-Authenticate") != "Bearer" {
-				t.Fatalf("WWW-Authenticate = %q, want Bearer", response.Header().Get("WWW-Authenticate"))
+			if tt.status == http.StatusUnauthorized && response.Header().Get("WWW-Authenticate") != "" {
+				t.Fatalf("unexpected WWW-Authenticate = %q", response.Header().Get("WWW-Authenticate"))
 			}
 		})
 	}

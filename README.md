@@ -31,6 +31,7 @@ make migrate-apply
 go run ./cmd/market add --description "Opening balance" --amount 100.00
 go run ./cmd/market add --description "Coffee" --amount -4.50
 go run ./cmd/market list
+export SESSION_SIGNING_KEY="$(openssl rand -base64 32)"
 go run ./cmd/market serve
 ```
 
@@ -42,17 +43,24 @@ curl http://localhost:8080/health
 curl -X POST http://localhost:8080/auth/register \
   -H 'Content-Type: application/json' \
   -d '{"email":"person@example.com","password":"correct horse battery staple"}'
-curl -X POST http://localhost:8080/auth/login \
+curl -c cookies.txt -X POST http://localhost:8080/auth/login \
   -H 'Content-Type: application/json' \
   -d '{"email":"person@example.com","password":"correct horse battery staple"}'
-curl http://localhost:8080/auth/whoami -H "Authorization: Bearer $TOKEN"
-curl http://localhost:8080/entries -H "Authorization: Bearer $TOKEN"
-curl http://localhost:8080/orders -H "Authorization: Bearer $TOKEN"
+curl -b cookies.txt http://localhost:8080/auth/whoami
+curl -b cookies.txt http://localhost:8080/entries
+curl -b cookies.txt http://localhost:8080/orders
 ```
 
-Login returns an opaque database-backed Bearer token. Sessions expire after 30
-days; `POST /auth/refresh` extends the same session for another 30 days and
-`POST /auth/logout` revokes it.
+Login sets an HttpOnly, SameSite=Lax cookie named `session` containing an opaque
+database-backed token signed with HMAC-SHA256. Login and refresh return only
+`expiresAt` in JSON; the token is sent exclusively in the cookie.
+Set `SESSION_SIGNING_KEY` to a base64-encoded random key of at least 32
+bytes; keep it secret and reuse it across restarts and server instances. Changing
+the key invalidates existing cookies. Unsigned or modified cookies are rejected.
+The cookie is Secure on HTTPS
+requests. Sessions expire after 30 days; `POST /auth/refresh` extends the same
+session and cookie for another 30 days, and `POST /auth/logout` revokes it and
+clears the cookie. Protected routes do not accept Authorization headers.
 Session IP metadata prefers `Forwarded` and `X-Forwarded-For`, so deployments
 must configure their reverse proxy to replace untrusted forwarding headers.
 

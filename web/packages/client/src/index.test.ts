@@ -35,11 +35,11 @@ describe("generated Market client", () => {
   });
 
   it.each([
-    { authorization: "Bearer test-token" },
-    new Headers({ Authorization: "Bearer test-token" }),
-    [["authorization", "Bearer test-token"]] as [string, string][],
+    { "x-request-id": "test-request" },
+    new Headers({ "X-Request-Id": "test-request" }),
+    [["x-request-id", "test-request"]] as [string, string][],
   ])("serializes login credentials and preserves headers: %j", async (headers) => {
-    const session = { token: "test-token", expiresAt: "2026-11-01T00:00:00Z" };
+    const session = { expiresAt: "2026-11-01T00:00:00Z" };
     const fetch = mockFetch(Response.json(session));
     const credentials = { email: "person@example.com", password: "correct horse battery staple" };
 
@@ -47,7 +47,7 @@ describe("generated Market client", () => {
 
     expect(fetch).toHaveBeenCalledExactlyOnceWith("/auth/login", {
       method: "POST",
-      headers: { "Content-Type": "application/json", authorization: "Bearer test-token" },
+      headers: { "Content-Type": "application/json", "x-request-id": "test-request" },
       body: JSON.stringify(credentials),
     });
     expect(result.data).toEqual(session);
@@ -72,7 +72,7 @@ describe("generated Market client", () => {
   ] as const)("passes authentication and cancellation to %s", async (operation, url, method) => {
     const fetch = mockFetch(Response.json({}));
     const options = {
-      headers: { Authorization: "Bearer test-token" },
+      credentials: "include" as const,
       signal: new AbortController().signal,
     };
 
@@ -83,7 +83,7 @@ describe("generated Market client", () => {
 
   it("handles logout's empty 204 response", async () => {
     const fetch = mockFetch(new Response(null, { status: 204 }));
-    const options = { headers: { Authorization: "Bearer test-token" } };
+    const options = { credentials: "include" as const };
 
     const result = await logout(options);
 

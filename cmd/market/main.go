@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"flag"
 	"fmt"
@@ -71,7 +72,15 @@ func serve(service *bookkeeping.Service, authentication *auth.Service, args []st
 		return err
 	}
 
-	handler, err := api.NewRouter(service, authentication)
+	key, err := base64.StdEncoding.Strict().DecodeString(os.Getenv("SESSION_SIGNING_KEY"))
+	if err != nil {
+		return fmt.Errorf("SESSION_SIGNING_KEY must be a base64-encoded key: %w", err)
+	}
+	signer, err := auth.NewCookieSigner(key)
+	if err != nil {
+		return fmt.Errorf("SESSION_SIGNING_KEY: %w", err)
+	}
+	handler, err := api.NewRouter(service, authentication, signer)
 	if err != nil {
 		return err
 	}
@@ -148,7 +157,8 @@ Usage:
 
 Environment:
   DATABASE_URL  PostgreSQL connection string
-  HTTP_ADDR     Default server listen address`)
+  HTTP_ADDR     Default server listen address
+  SESSION_SIGNING_KEY  Base64-encoded session cookie signing key (at least 32 bytes)`)
 	fmt.Fprintln(os.Stderr, message)
 	return nil
 }

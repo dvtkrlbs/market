@@ -1,8 +1,9 @@
 components:
   securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
+    SessionAuth:
+      type: apiKey
+      in: cookie
+      name: session
   schemas:
     Error:
       type: object

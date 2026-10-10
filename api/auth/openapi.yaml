@@ -38,11 +38,11 @@ paths:
               $ref: "#/components/schemas/Credentials"
       responses:
         "200":
-          description: Login succeeded
+          description: Login succeeded; sets the HttpOnly session cookie
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SessionToken"
+                $ref: "#/components/schemas/SessionExpiry"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -51,17 +51,17 @@ paths:
     post:
       operationId: logout
       security:
-        - BearerAuth: []
+        - SessionAuth: []
       responses:
         "204":
-          description: Session revoked
+          description: Session revoked; clears the session cookie
         "401":
           $ref: "#/components/responses/Unauthorized"
   /auth/whoami:
     get:
       operationId: whoami
       security:
-        - BearerAuth: []
+        - SessionAuth: []
       responses:
         "200":
           description: Current user and session
@@ -75,20 +75,20 @@ paths:
     post:
       operationId: refresh
       security:
-        - BearerAuth: []
+        - SessionAuth: []
       responses:
         "200":
-          description: Session expiry extended
+          description: Session expiry extended; updates the session cookie
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SessionToken"
+                $ref: "#/components/schemas/SessionExpiry"
         "401":
           $ref: "#/components/responses/Unauthorized"
 components:
   securitySchemes:
-    BearerAuth:
-      $ref: "../common/openapi.yaml#/components/securitySchemes/BearerAuth"
+    SessionAuth:
+      $ref: "../common/openapi.yaml#/components/securitySchemes/SessionAuth"
   responses:
     BadRequest:
       description: Invalid request
@@ -129,12 +129,10 @@ components:
         createdAt:
           type: string
           format: date-time
-    SessionToken:
+    SessionExpiry:
       type: object
-      required: [token, expiresAt]
+      required: [expiresAt]
       properties:
-        token:
-          type: string
         expiresAt:
           type: string
           format: date-time

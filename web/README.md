@@ -82,9 +82,7 @@ const session = await login({
 });
 
 if (session.status === 200) {
-  const entries = await listEntries({
-    headers: { Authorization: `Bearer ${session.data.token}` },
-  });
+  const entries = await listEntries();
   if (entries.status === 200) {
     console.log(entries.data);
   }
@@ -96,7 +94,8 @@ application (or proxy its routes to `http://localhost:8080` in development).
 Functions accept `RequestInit` for headers, cancellation signals, and other fetch
 options. They return `{ data, status, headers }`; check `status` to distinguish
 successful responses from documented API errors. Network failures reject.
-Authentication is explicit: pass the Bearer token on protected requests.
+Authentication uses the HttpOnly `session` cookie set by login. Same-origin fetch
+requests send it automatically; no Authorization header is needed.
 
 Formatting, linting, type checks, tests, packaging, and task orchestration are all
 provided by Vite+. No separate ESLint, Prettier, Vitest, or build CLI is configured.

@@ -17,7 +17,10 @@ import (
 	nethttpmiddleware "github.com/oapi-codegen/nethttp-middleware"
 )
 
-func NewRouter(service *bookkeeping.Service, authentication *authservice.Service) (http.Handler, error) {
+func NewRouter(service *bookkeeping.Service, authentication *authservice.Service, signer *authservice.CookieSigner) (http.Handler, error) {
+	if signer == nil {
+		return nil, fmt.Errorf("session cookie signer is required")
+	}
 	mux := http.NewServeMux()
 
 	health.HandlerFromMux(
@@ -33,7 +36,7 @@ func NewRouter(service *bookkeeping.Service, authentication *authservice.Service
 		mux,
 	)
 	authapi.HandlerFromMux(
-		authapi.NewStrictHandlerWithOptions(authapi.NewServer(authentication), nil, authapi.StrictHTTPServerOptions{
+		authapi.NewStrictHandlerWithOptions(authapi.NewServer(authentication, signer), nil, authapi.StrictHTTPServerOptions{
 			RequestErrorHandlerFunc: func(w http.ResponseWriter, _ *http.Request, _ error) {
 				writeAPIError(w, http.StatusBadRequest, "invalid request")
 			},
@@ -54,7 +57,7 @@ func NewRouter(service *bookkeeping.Service, authentication *authservice.Service
 	}
 	validator := nethttpmiddleware.OapiRequestValidatorWithOptions(spec, &nethttpmiddleware.Options{
 		Options: openapi3filter.Options{
-			AuthenticationFunc: authenticationResolver(authentication),
+			AuthenticationFunc: authenticationResolver(authentication, signer),
 		},
 		ErrorHandlerWithOpts: validationErrorHandler,
 		Skipper: func(request *http.Request) bool {

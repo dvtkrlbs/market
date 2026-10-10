@@ -87,15 +87,12 @@ components:
       required:
       - status
       type: object
-    SessionToken:
+    SessionExpiry:
       properties:
         expiresAt:
           format: date-time
           type: string
-        token:
-          type: string
       required:
-      - token
       - expiresAt
       type: object
     User:
@@ -127,9 +124,10 @@ components:
       - sessionExpiresAt
       type: object
   securitySchemes:
-    BearerAuth:
-      scheme: bearer
-      type: http
+    SessionAuth:
+      in: cookie
+      name: session
+      type: apiKey
 info:
   title: Market API
   version: 0.1.0
@@ -149,8 +147,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SessionToken"
-          description: Login succeeded
+                $ref: "#/components/schemas/SessionExpiry"
+          description: Login succeeded; sets the HttpOnly session cookie
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -160,11 +158,11 @@ paths:
       operationId: logout
       responses:
         "204":
-          description: Session revoked
+          description: Session revoked; clears the session cookie
         "401":
           $ref: "#/components/responses/Unauthorized"
       security:
-      - BearerAuth: []
+      - SessionAuth: []
   /auth/refresh:
     post:
       operationId: refresh
@@ -173,12 +171,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SessionToken"
-          description: Session expiry extended
+                $ref: "#/components/schemas/SessionExpiry"
+          description: Session expiry extended; updates the session cookie
         "401":
           $ref: "#/components/responses/Unauthorized"
       security:
-      - BearerAuth: []
+      - SessionAuth: []
   /auth/register:
     post:
       operationId: register
@@ -216,7 +214,7 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
       security:
-      - BearerAuth: []
+      - SessionAuth: []
   /entries:
     get:
       operationId: listEntries
@@ -230,7 +228,7 @@ paths:
                 type: array
           description: Entries, newest first
       security:
-      - BearerAuth: []
+      - SessionAuth: []
     post:
       operationId: createEntry
       requestBody:
@@ -253,7 +251,7 @@ paths:
                 $ref: "#/components/schemas/Error"
           description: Invalid request
       security:
-      - BearerAuth: []
+      - SessionAuth: []
   /health:
     get:
       operationId: getHealth
@@ -275,4 +273,4 @@ paths:
                 $ref: "#/components/schemas/OrdersPlaceholder"
           description: Placeholder response for the future orders API
       security:
-      - BearerAuth: []
+      - SessionAuth: []

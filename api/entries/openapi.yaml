@@ -7,7 +7,7 @@ paths:
     get:
       operationId: listEntries
       security:
-        - BearerAuth: []
+        - SessionAuth: []
       responses:
         "200":
           description: Entries, newest first
@@ -20,7 +20,7 @@ paths:
     post:
       operationId: createEntry
       security:
-        - BearerAuth: []
+        - SessionAuth: []
       requestBody:
         required: true
         content:
@@ -42,8 +42,8 @@ paths:
                 $ref: "../common/openapi.yaml#/components/schemas/Error"
 components:
   securitySchemes:
-    BearerAuth:
-      $ref: "../common/openapi.yaml#/components/securitySchemes/BearerAuth"
+    SessionAuth:
+      $ref: "../common/openapi.yaml#/components/securitySchemes/SessionAuth"
   schemas:
     Entry:
       type: object

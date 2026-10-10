@@ -23,10 +23,9 @@ type Credentials struct {
 	Password string              `json:"password"`
 }
 
-// SessionToken defines model for SessionToken.
-type SessionToken struct {
+// SessionExpiry defines model for SessionExpiry.
+type SessionExpiry struct {
 	ExpiresAt time.Time `json:"expiresAt"`
-	Token     string    `json:"token"`
 }
 
 // User defines model for User.
@@ -293,7 +292,7 @@ type LoginResponseObject interface {
 	VisitLoginResponse(w http.ResponseWriter) error
 }
 
-type Login200JSONResponse SessionToken
+type Login200JSONResponse SessionExpiry
 
 func (response Login200JSONResponse) VisitLoginResponse(w http.ResponseWriter) error {
 
@@ -371,7 +370,7 @@ type RefreshResponseObject interface {
 	VisitRefreshResponse(w http.ResponseWriter) error
 }
 
-type Refresh200JSONResponse SessionToken
+type Refresh200JSONResponse SessionExpiry
 
 func (response Refresh200JSONResponse) VisitRefreshResponse(w http.ResponseWriter) error {
 

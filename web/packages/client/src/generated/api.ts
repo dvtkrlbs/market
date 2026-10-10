@@ -41,9 +41,8 @@ export interface OrdersPlaceholder {
   status: string;
 }
 
-export interface SessionToken {
+export interface SessionExpiry {
   expiresAt: string;
-  token: string;
 }
 
 export interface User {
@@ -68,7 +67,7 @@ export type BadRequestResponse = Error;
 export type UnauthorizedResponse = Error;
 
 export type loginResponse200 = {
-  data: SessionToken;
+  data: SessionExpiry;
   status: 200;
 };
 
@@ -167,7 +166,7 @@ export const logout = async (options?: RequestInit): Promise<logoutResponse> => 
 };
 
 export type refreshResponse200 = {
-  data: SessionToken;
+  data: SessionExpiry;
   status: 200;
 };
 
