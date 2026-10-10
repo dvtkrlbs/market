@@ -31,7 +31,6 @@ var (
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "revoked_at", Type: field.TypeTime, Nullable: true},
 		{Name: "expires_at", Type: field.TypeTime},
-		{Name: "superseded_by", Type: field.TypeString, Unique: true, Nullable: true},
 		{Name: "user_id", Type: field.TypeInt},
 	}
 	// SessionsTable holds the schema information for the "sessions" table.
@@ -41,14 +40,8 @@ var (
 		PrimaryKey: []*schema.Column{SessionsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "sessions_sessions_predecessor",
-				Columns:    []*schema.Column{SessionsColumns[7]},
-				RefColumns: []*schema.Column{SessionsColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-			{
 				Symbol:     "sessions_users_sessions",
-				Columns:    []*schema.Column{SessionsColumns[8]},
+				Columns:    []*schema.Column{SessionsColumns[7]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -57,7 +50,7 @@ var (
 			{
 				Name:    "session_user_id",
 				Unique:  false,
-				Columns: []*schema.Column{SessionsColumns[8]},
+				Columns: []*schema.Column{SessionsColumns[7]},
 			},
 			{
 				Name:    "session_expires_at",
@@ -89,6 +82,5 @@ var (
 )
 
 func init() {
-	SessionsTable.ForeignKeys[0].RefTable = SessionsTable
-	SessionsTable.ForeignKeys[1].RefTable = UsersTable
+	SessionsTable.ForeignKeys[0].RefTable = UsersTable
 }

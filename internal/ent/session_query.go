@@ -4,7 +4,6 @@ package ent
 
 import (
 	"context"
-	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -20,13 +19,11 @@ import (
 // SessionQuery is the builder for querying Session entities.
 type SessionQuery struct {
 	config
-	ctx             *QueryContext
-	order           []session.OrderOption
-	inters          []Interceptor
-	predicates      []predicate.Session
-	withUser        *UserQuery
-	withSuccessor   *SessionQuery
-	withPredecessor *SessionQuery
+	ctx        *QueryContext
+	order      []session.OrderOption
+	inters     []Interceptor
+	predicates []predicate.Session
+	withUser   *UserQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -78,50 +75,6 @@ func (_q *SessionQuery) QueryUser() *UserQuery {
 			sqlgraph.From(session.Table, session.FieldID, selector),
 			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, session.UserTable, session.UserColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QuerySuccessor chains the current query on the "successor" edge.
-func (_q *SessionQuery) QuerySuccessor() *SessionQuery {
-	query := (&SessionClient{config: _q.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := _q.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := _q.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(session.Table, session.FieldID, selector),
-			sqlgraph.To(session.Table, session.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, session.SuccessorTable, session.SuccessorColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryPredecessor chains the current query on the "predecessor" edge.
-func (_q *SessionQuery) QueryPredecessor() *SessionQuery {
-	query := (&SessionClient{config: _q.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := _q.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := _q.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(session.Table, session.FieldID, selector),
-			sqlgraph.To(session.Table, session.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, session.PredecessorTable, session.PredecessorColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -316,14 +269,12 @@ func (_q *SessionQuery) Clone() *SessionQuery {
 		return nil
 	}
 	return &SessionQuery{
-		config:          _q.config,
-		ctx:             _q.ctx.Clone(),
-		order:           append([]session.OrderOption{}, _q.order...),
-		inters:          append([]Interceptor{}, _q.inters...),
-		predicates:      append([]predicate.Session{}, _q.predicates...),
-		withUser:        _q.withUser.Clone(),
-		withSuccessor:   _q.withSuccessor.Clone(),
-		withPredecessor: _q.withPredecessor.Clone(),
+		config:     _q.config,
+		ctx:        _q.ctx.Clone(),
+		order:      append([]session.OrderOption{}, _q.order...),
+		inters:     append([]Interceptor{}, _q.inters...),
+		predicates: append([]predicate.Session{}, _q.predicates...),
+		withUser:   _q.withUser.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -338,28 +289,6 @@ func (_q *SessionQuery) WithUser(opts ...func(*UserQuery)) *SessionQuery {
 		opt(query)
 	}
 	_q.withUser = query
-	return _q
-}
-
-// WithSuccessor tells the query-builder to eager-load the nodes that are connected to
-// the "successor" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *SessionQuery) WithSuccessor(opts ...func(*SessionQuery)) *SessionQuery {
-	query := (&SessionClient{config: _q.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	_q.withSuccessor = query
-	return _q
-}
-
-// WithPredecessor tells the query-builder to eager-load the nodes that are connected to
-// the "predecessor" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *SessionQuery) WithPredecessor(opts ...func(*SessionQuery)) *SessionQuery {
-	query := (&SessionClient{config: _q.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	_q.withPredecessor = query
 	return _q
 }
 
@@ -441,10 +370,8 @@ func (_q *SessionQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Sess
 	var (
 		nodes       = []*Session{}
 		_spec       = _q.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [1]bool{
 			_q.withUser != nil,
-			_q.withSuccessor != nil,
-			_q.withPredecessor != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -468,18 +395,6 @@ func (_q *SessionQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Sess
 	if query := _q.withUser; query != nil {
 		if err := _q.loadUser(ctx, query, nodes, nil,
 			func(n *Session, e *User) { n.Edges.User = e }); err != nil {
-			return nil, err
-		}
-	}
-	if query := _q.withSuccessor; query != nil {
-		if err := _q.loadSuccessor(ctx, query, nodes, nil,
-			func(n *Session, e *Session) { n.Edges.Successor = e }); err != nil {
-			return nil, err
-		}
-	}
-	if query := _q.withPredecessor; query != nil {
-		if err := _q.loadPredecessor(ctx, query, nodes, nil,
-			func(n *Session, e *Session) { n.Edges.Predecessor = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -515,68 +430,6 @@ func (_q *SessionQuery) loadUser(ctx context.Context, query *UserQuery, nodes []
 	}
 	return nil
 }
-func (_q *SessionQuery) loadSuccessor(ctx context.Context, query *SessionQuery, nodes []*Session, init func(*Session), assign func(*Session, *Session)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*Session)
-	for i := range nodes {
-		if nodes[i].SupersededBy == nil {
-			continue
-		}
-		fk := *nodes[i].SupersededBy
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
-		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
-	}
-	if len(ids) == 0 {
-		return nil
-	}
-	query.Where(session.IDIn(ids...))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
-		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "superseded_by" returned %v`, n.ID)
-		}
-		for i := range nodes {
-			assign(nodes[i], n)
-		}
-	}
-	return nil
-}
-func (_q *SessionQuery) loadPredecessor(ctx context.Context, query *SessionQuery, nodes []*Session, init func(*Session), assign func(*Session, *Session)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[string]*Session)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
-	}
-	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(session.FieldSupersededBy)
-	}
-	query.Where(predicate.Session(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(session.PredecessorColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		fk := n.SupersededBy
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "superseded_by" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
-		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "superseded_by" returned %v for node %v`, *fk, n.ID)
-		}
-		assign(node, n)
-	}
-	return nil
-}
 
 func (_q *SessionQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -605,9 +458,6 @@ func (_q *SessionQuery) querySpec() *sqlgraph.QuerySpec {
 		}
 		if _q.withUser != nil {
 			_spec.Node.AddColumnOnce(session.FieldUserID)
-		}
-		if _q.withSuccessor != nil {
-			_spec.Node.AddColumnOnce(session.FieldSupersededBy)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {

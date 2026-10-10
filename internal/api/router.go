@@ -33,7 +33,14 @@ func NewRouter(service *bookkeeping.Service, authentication *authservice.Service
 		mux,
 	)
 	authapi.HandlerFromMux(
-		authapi.NewStrictHandler(authapi.NewServer(authentication), nil),
+		authapi.NewStrictHandlerWithOptions(authapi.NewServer(authentication), nil, authapi.StrictHTTPServerOptions{
+			RequestErrorHandlerFunc: func(w http.ResponseWriter, _ *http.Request, _ error) {
+				writeAPIError(w, http.StatusBadRequest, "invalid request")
+			},
+			ResponseErrorHandlerFunc: func(w http.ResponseWriter, _ *http.Request, _ error) {
+				writeAPIError(w, http.StatusInternalServerError, "internal server error")
+			},
+		}),
 		mux,
 	)
 

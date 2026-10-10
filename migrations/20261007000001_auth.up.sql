@@ -14,12 +14,10 @@ CREATE TABLE sessions (
   ip inet NULL,
   created_at timestamptz NOT NULL,
   revoked_at timestamptz NULL,
-  expires_at timestamptz NOT NULL,
-  superseded_by character varying NULL REFERENCES sessions (session_id),
-  CONSTRAINT sessions_superseded_by_unique UNIQUE (superseded_by)
+  expires_at timestamptz NOT NULL
 );
 
 CREATE INDEX sessions_user_id ON sessions (user_id);
 CREATE INDEX sessions_expires_at ON sessions (expires_at);
 CREATE INDEX sessions_active_by_user ON sessions (user_id, expires_at)
-  WHERE revoked_at IS NULL AND superseded_by IS NULL;
+  WHERE revoked_at IS NULL;

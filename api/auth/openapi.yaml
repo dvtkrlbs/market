@@ -78,19 +78,13 @@ paths:
         - BearerAuth: []
       responses:
         "200":
-          description: Rotated session token
+          description: Session expiry extended
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/SessionToken"
         "401":
           $ref: "#/components/responses/Unauthorized"
-        "409":
-          description: Session was already refreshed
-          content:
-            application/json:
-              schema:
-                $ref: "../common/openapi.yaml#/components/schemas/Error"
 components:
   securitySchemes:
     BearerAuth:

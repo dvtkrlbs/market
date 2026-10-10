@@ -25,7 +25,6 @@ var (
 	ErrEmailAlreadyExists = errors.New("email is already registered")
 	ErrInvalidCredentials = errors.New("invalid email or password")
 	ErrInvalidSession     = errors.New("invalid or expired session")
-	ErrSessionSuperseded  = errors.New("session was already refreshed")
 )
 
 type SessionMetadata struct {
@@ -41,6 +40,7 @@ type SessionToken struct {
 type Principal struct {
 	User    *ent.User
 	Session *ent.Session
+	Token   string
 }
 
 type Service struct {
@@ -129,14 +129,14 @@ func (s *Service) Authenticate(ctx context.Context, token string) (*Principal, e
 	}
 	want := secretDigest(secret)
 	if subtle.ConstantTimeCompare([]byte(stored.SessionSecret), []byte(want)) != 1 ||
-		stored.RevokedAt != nil || stored.SupersededBy != nil || !stored.ExpiresAt.After(s.now()) {
+		stored.RevokedAt != nil || !stored.ExpiresAt.After(s.now()) {
 		return nil, ErrInvalidSession
 	}
 	account, err := stored.Edges.UserOrErr()
 	if err != nil || account.DeletedAt != nil {
 		return nil, ErrInvalidSession
 	}
-	return &Principal{User: account, Session: stored}, nil
+	return &Principal{User: account, Session: stored, Token: token}, nil
 }
 
 func (s *Service) Logout(ctx context.Context, principal *Principal) error {
@@ -145,7 +145,6 @@ func (s *Service) Logout(ctx context.Context, principal *Principal) error {
 		Where(
 			session.ID(principal.Session.ID),
 			session.RevokedAtIsNil(),
-			session.SupersededByIsNil(),
 		).
 		SetRevokedAt(now).
 		Save(ctx)
@@ -158,42 +157,25 @@ func (s *Service) Logout(ctx context.Context, principal *Principal) error {
 	return nil
 }
 
-func (s *Service) Refresh(ctx context.Context, principal *Principal, metadata SessionMetadata) (token SessionToken, err error) {
-	tx, err := s.client.Tx(ctx)
-	if err != nil {
-		return SessionToken{}, fmt.Errorf("begin refresh transaction: %w", err)
-	}
-	defer func() {
-		if err != nil {
-			_ = tx.Rollback()
-		}
-	}()
-
-	token, err = s.createSession(ctx, tx.Session, principal.User.ID, metadata)
-	if err != nil {
-		return SessionToken{}, err
-	}
+func (s *Service) Refresh(ctx context.Context, principal *Principal) (SessionToken, error) {
 	now := s.now()
-	updated, err := tx.Session.Update().
+	expiresAt := now.Add(sessionLifetime)
+	updated, err := s.client.Session.Update().
 		Where(
 			session.ID(principal.Session.ID),
 			session.RevokedAtIsNil(),
-			session.SupersededByIsNil(),
 			session.ExpiresAtGT(now),
 		).
-		SetRevokedAt(now).
-		SetSupersededBy(strings.SplitN(token.Token, ".", 2)[0]).
+		SetExpiresAt(expiresAt).
 		Save(ctx)
 	if err != nil {
-		return SessionToken{}, fmt.Errorf("supersede session: %w", err)
+		return SessionToken{}, fmt.Errorf("refresh session: %w", err)
 	}
 	if updated != 1 {
-		return SessionToken{}, ErrSessionSuperseded
+		return SessionToken{}, ErrInvalidSession
 	}
-	if err = tx.Commit(); err != nil {
-		return SessionToken{}, fmt.Errorf("commit refresh: %w", err)
-	}
-	return token, nil
+	principal.Session.ExpiresAt = expiresAt
+	return SessionToken{Token: principal.Token, ExpiresAt: expiresAt}, nil
 }
 
 type sessionCreator interface {

@@ -27,7 +27,6 @@ func (Session) Fields() []ent.Field {
 		field.Time("created_at").Default(time.Now).Immutable(),
 		field.Time("revoked_at").Optional().Nillable(),
 		field.Time("expires_at"),
-		field.String("superseded_by").Optional().Nillable(),
 	}
 }
 
@@ -39,11 +38,6 @@ func (Session) Edges() []ent.Edge {
 			Unique().
 			Required().
 			Immutable(),
-		edge.To("predecessor", Session.Type).
-			Unique().
-			From("successor").
-			Unique().
-			Field("superseded_by"),
 	}
 }
 

@@ -95,20 +95,6 @@ func (_c *SessionCreate) SetExpiresAt(v time.Time) *SessionCreate {
 	return _c
 }
 
-// SetSupersededBy sets the "superseded_by" field.
-func (_c *SessionCreate) SetSupersededBy(v string) *SessionCreate {
-	_c.mutation.SetSupersededBy(v)
-	return _c
-}
-
-// SetNillableSupersededBy sets the "superseded_by" field if the given value is not nil.
-func (_c *SessionCreate) SetNillableSupersededBy(v *string) *SessionCreate {
-	if v != nil {
-		_c.SetSupersededBy(*v)
-	}
-	return _c
-}
-
 // SetID sets the "id" field.
 func (_c *SessionCreate) SetID(v string) *SessionCreate {
 	_c.mutation.SetID(v)
@@ -118,44 +104,6 @@ func (_c *SessionCreate) SetID(v string) *SessionCreate {
 // SetUser sets the "user" edge to the User entity.
 func (_c *SessionCreate) SetUser(v *User) *SessionCreate {
 	return _c.SetUserID(v.ID)
-}
-
-// SetSuccessorID sets the "successor" edge to the Session entity by ID.
-func (_c *SessionCreate) SetSuccessorID(id string) *SessionCreate {
-	_c.mutation.SetSuccessorID(id)
-	return _c
-}
-
-// SetNillableSuccessorID sets the "successor" edge to the Session entity by ID if the given value is not nil.
-func (_c *SessionCreate) SetNillableSuccessorID(id *string) *SessionCreate {
-	if id != nil {
-		_c = _c.SetSuccessorID(*id)
-	}
-	return _c
-}
-
-// SetSuccessor sets the "successor" edge to the Session entity.
-func (_c *SessionCreate) SetSuccessor(v *Session) *SessionCreate {
-	return _c.SetSuccessorID(v.ID)
-}
-
-// SetPredecessorID sets the "predecessor" edge to the Session entity by ID.
-func (_c *SessionCreate) SetPredecessorID(id string) *SessionCreate {
-	_c.mutation.SetPredecessorID(id)
-	return _c
-}
-
-// SetNillablePredecessorID sets the "predecessor" edge to the Session entity by ID if the given value is not nil.
-func (_c *SessionCreate) SetNillablePredecessorID(id *string) *SessionCreate {
-	if id != nil {
-		_c = _c.SetPredecessorID(*id)
-	}
-	return _c
-}
-
-// SetPredecessor sets the "predecessor" edge to the Session entity.
-func (_c *SessionCreate) SetPredecessor(v *Session) *SessionCreate {
-	return _c.SetPredecessorID(v.ID)
 }
 
 // Mutation returns the SessionMutation object of the builder.
@@ -290,39 +238,6 @@ func (_c *SessionCreate) createSpec() (*Session, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.UserID = nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := _c.mutation.SuccessorIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: true,
-			Table:   session.SuccessorTable,
-			Columns: []string{session.SuccessorColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(session.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.SupersededBy = &nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := _c.mutation.PredecessorIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: false,
-			Table:   session.PredecessorTable,
-			Columns: []string{session.PredecessorColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(session.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

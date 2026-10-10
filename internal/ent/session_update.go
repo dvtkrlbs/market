@@ -116,79 +116,9 @@ func (_u *SessionUpdate) SetNillableExpiresAt(v *time.Time) *SessionUpdate {
 	return _u
 }
 
-// SetSupersededBy sets the "superseded_by" field.
-func (_u *SessionUpdate) SetSupersededBy(v string) *SessionUpdate {
-	_u.mutation.SetSupersededBy(v)
-	return _u
-}
-
-// SetNillableSupersededBy sets the "superseded_by" field if the given value is not nil.
-func (_u *SessionUpdate) SetNillableSupersededBy(v *string) *SessionUpdate {
-	if v != nil {
-		_u.SetSupersededBy(*v)
-	}
-	return _u
-}
-
-// ClearSupersededBy clears the value of the "superseded_by" field.
-func (_u *SessionUpdate) ClearSupersededBy() *SessionUpdate {
-	_u.mutation.ClearSupersededBy()
-	return _u
-}
-
-// SetSuccessorID sets the "successor" edge to the Session entity by ID.
-func (_u *SessionUpdate) SetSuccessorID(id string) *SessionUpdate {
-	_u.mutation.SetSuccessorID(id)
-	return _u
-}
-
-// SetNillableSuccessorID sets the "successor" edge to the Session entity by ID if the given value is not nil.
-func (_u *SessionUpdate) SetNillableSuccessorID(id *string) *SessionUpdate {
-	if id != nil {
-		_u = _u.SetSuccessorID(*id)
-	}
-	return _u
-}
-
-// SetSuccessor sets the "successor" edge to the Session entity.
-func (_u *SessionUpdate) SetSuccessor(v *Session) *SessionUpdate {
-	return _u.SetSuccessorID(v.ID)
-}
-
-// SetPredecessorID sets the "predecessor" edge to the Session entity by ID.
-func (_u *SessionUpdate) SetPredecessorID(id string) *SessionUpdate {
-	_u.mutation.SetPredecessorID(id)
-	return _u
-}
-
-// SetNillablePredecessorID sets the "predecessor" edge to the Session entity by ID if the given value is not nil.
-func (_u *SessionUpdate) SetNillablePredecessorID(id *string) *SessionUpdate {
-	if id != nil {
-		_u = _u.SetPredecessorID(*id)
-	}
-	return _u
-}
-
-// SetPredecessor sets the "predecessor" edge to the Session entity.
-func (_u *SessionUpdate) SetPredecessor(v *Session) *SessionUpdate {
-	return _u.SetPredecessorID(v.ID)
-}
-
 // Mutation returns the SessionMutation object of the builder.
 func (_u *SessionUpdate) Mutation() *SessionMutation {
 	return _u.mutation
-}
-
-// ClearSuccessor clears the "successor" edge to the Session entity.
-func (_u *SessionUpdate) ClearSuccessor() *SessionUpdate {
-	_u.mutation.ClearSuccessor()
-	return _u
-}
-
-// ClearPredecessor clears the "predecessor" edge to the Session entity.
-func (_u *SessionUpdate) ClearPredecessor() *SessionUpdate {
-	_u.mutation.ClearPredecessor()
-	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -261,64 +191,6 @@ func (_u *SessionUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.ExpiresAt(); ok {
 		_spec.SetField(session.FieldExpiresAt, field.TypeTime, value)
-	}
-	if _u.mutation.SuccessorCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: true,
-			Table:   session.SuccessorTable,
-			Columns: []string{session.SuccessorColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(session.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.SuccessorIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: true,
-			Table:   session.SuccessorTable,
-			Columns: []string{session.SuccessorColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(session.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.PredecessorCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: false,
-			Table:   session.PredecessorTable,
-			Columns: []string{session.PredecessorColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(session.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.PredecessorIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: false,
-			Table:   session.PredecessorTable,
-			Columns: []string{session.PredecessorColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(session.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -428,79 +300,9 @@ func (_u *SessionUpdateOne) SetNillableExpiresAt(v *time.Time) *SessionUpdateOne
 	return _u
 }
 
-// SetSupersededBy sets the "superseded_by" field.
-func (_u *SessionUpdateOne) SetSupersededBy(v string) *SessionUpdateOne {
-	_u.mutation.SetSupersededBy(v)
-	return _u
-}
-
-// SetNillableSupersededBy sets the "superseded_by" field if the given value is not nil.
-func (_u *SessionUpdateOne) SetNillableSupersededBy(v *string) *SessionUpdateOne {
-	if v != nil {
-		_u.SetSupersededBy(*v)
-	}
-	return _u
-}
-
-// ClearSupersededBy clears the value of the "superseded_by" field.
-func (_u *SessionUpdateOne) ClearSupersededBy() *SessionUpdateOne {
-	_u.mutation.ClearSupersededBy()
-	return _u
-}
-
-// SetSuccessorID sets the "successor" edge to the Session entity by ID.
-func (_u *SessionUpdateOne) SetSuccessorID(id string) *SessionUpdateOne {
-	_u.mutation.SetSuccessorID(id)
-	return _u
-}
-
-// SetNillableSuccessorID sets the "successor" edge to the Session entity by ID if the given value is not nil.
-func (_u *SessionUpdateOne) SetNillableSuccessorID(id *string) *SessionUpdateOne {
-	if id != nil {
-		_u = _u.SetSuccessorID(*id)
-	}
-	return _u
-}
-
-// SetSuccessor sets the "successor" edge to the Session entity.
-func (_u *SessionUpdateOne) SetSuccessor(v *Session) *SessionUpdateOne {
-	return _u.SetSuccessorID(v.ID)
-}
-
-// SetPredecessorID sets the "predecessor" edge to the Session entity by ID.
-func (_u *SessionUpdateOne) SetPredecessorID(id string) *SessionUpdateOne {
-	_u.mutation.SetPredecessorID(id)
-	return _u
-}
-
-// SetNillablePredecessorID sets the "predecessor" edge to the Session entity by ID if the given value is not nil.
-func (_u *SessionUpdateOne) SetNillablePredecessorID(id *string) *SessionUpdateOne {
-	if id != nil {
-		_u = _u.SetPredecessorID(*id)
-	}
-	return _u
-}
-
-// SetPredecessor sets the "predecessor" edge to the Session entity.
-func (_u *SessionUpdateOne) SetPredecessor(v *Session) *SessionUpdateOne {
-	return _u.SetPredecessorID(v.ID)
-}
-
 // Mutation returns the SessionMutation object of the builder.
 func (_u *SessionUpdateOne) Mutation() *SessionMutation {
 	return _u.mutation
-}
-
-// ClearSuccessor clears the "successor" edge to the Session entity.
-func (_u *SessionUpdateOne) ClearSuccessor() *SessionUpdateOne {
-	_u.mutation.ClearSuccessor()
-	return _u
-}
-
-// ClearPredecessor clears the "predecessor" edge to the Session entity.
-func (_u *SessionUpdateOne) ClearPredecessor() *SessionUpdateOne {
-	_u.mutation.ClearPredecessor()
-	return _u
 }
 
 // Where appends a list predicates to the SessionUpdate builder.
@@ -603,64 +405,6 @@ func (_u *SessionUpdateOne) sqlSave(ctx context.Context) (_node *Session, err er
 	}
 	if value, ok := _u.mutation.ExpiresAt(); ok {
 		_spec.SetField(session.FieldExpiresAt, field.TypeTime, value)
-	}
-	if _u.mutation.SuccessorCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: true,
-			Table:   session.SuccessorTable,
-			Columns: []string{session.SuccessorColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(session.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.SuccessorIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: true,
-			Table:   session.SuccessorTable,
-			Columns: []string{session.SuccessorColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(session.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.PredecessorCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: false,
-			Table:   session.PredecessorTable,
-			Columns: []string{session.PredecessorColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(session.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.PredecessorIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: false,
-			Table:   session.PredecessorTable,
-			Columns: []string{session.PredecessorColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(session.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Session{config: _u.config}
 	_spec.Assign = _node.assignValues

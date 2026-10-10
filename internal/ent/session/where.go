@@ -100,11 +100,6 @@ func ExpiresAt(v time.Time) predicate.Session {
 	return predicate.Session(sql.FieldEQ(FieldExpiresAt, v))
 }
 
-// SupersededBy applies equality check predicate on the "superseded_by" field. It's identical to SupersededByEQ.
-func SupersededBy(v string) predicate.Session {
-	return predicate.Session(sql.FieldEQ(FieldSupersededBy, v))
-}
-
 // SessionSecretEQ applies the EQ predicate on the "session_secret" field.
 func SessionSecretEQ(v string) predicate.Session {
 	return predicate.Session(sql.FieldEQ(FieldSessionSecret, v))
@@ -470,81 +465,6 @@ func ExpiresAtLTE(v time.Time) predicate.Session {
 	return predicate.Session(sql.FieldLTE(FieldExpiresAt, v))
 }
 
-// SupersededByEQ applies the EQ predicate on the "superseded_by" field.
-func SupersededByEQ(v string) predicate.Session {
-	return predicate.Session(sql.FieldEQ(FieldSupersededBy, v))
-}
-
-// SupersededByNEQ applies the NEQ predicate on the "superseded_by" field.
-func SupersededByNEQ(v string) predicate.Session {
-	return predicate.Session(sql.FieldNEQ(FieldSupersededBy, v))
-}
-
-// SupersededByIn applies the In predicate on the "superseded_by" field.
-func SupersededByIn(vs ...string) predicate.Session {
-	return predicate.Session(sql.FieldIn(FieldSupersededBy, vs...))
-}
-
-// SupersededByNotIn applies the NotIn predicate on the "superseded_by" field.
-func SupersededByNotIn(vs ...string) predicate.Session {
-	return predicate.Session(sql.FieldNotIn(FieldSupersededBy, vs...))
-}
-
-// SupersededByGT applies the GT predicate on the "superseded_by" field.
-func SupersededByGT(v string) predicate.Session {
-	return predicate.Session(sql.FieldGT(FieldSupersededBy, v))
-}
-
-// SupersededByGTE applies the GTE predicate on the "superseded_by" field.
-func SupersededByGTE(v string) predicate.Session {
-	return predicate.Session(sql.FieldGTE(FieldSupersededBy, v))
-}
-
-// SupersededByLT applies the LT predicate on the "superseded_by" field.
-func SupersededByLT(v string) predicate.Session {
-	return predicate.Session(sql.FieldLT(FieldSupersededBy, v))
-}
-
-// SupersededByLTE applies the LTE predicate on the "superseded_by" field.
-func SupersededByLTE(v string) predicate.Session {
-	return predicate.Session(sql.FieldLTE(FieldSupersededBy, v))
-}
-
-// SupersededByContains applies the Contains predicate on the "superseded_by" field.
-func SupersededByContains(v string) predicate.Session {
-	return predicate.Session(sql.FieldContains(FieldSupersededBy, v))
-}
-
-// SupersededByHasPrefix applies the HasPrefix predicate on the "superseded_by" field.
-func SupersededByHasPrefix(v string) predicate.Session {
-	return predicate.Session(sql.FieldHasPrefix(FieldSupersededBy, v))
-}
-
-// SupersededByHasSuffix applies the HasSuffix predicate on the "superseded_by" field.
-func SupersededByHasSuffix(v string) predicate.Session {
-	return predicate.Session(sql.FieldHasSuffix(FieldSupersededBy, v))
-}
-
-// SupersededByIsNil applies the IsNil predicate on the "superseded_by" field.
-func SupersededByIsNil() predicate.Session {
-	return predicate.Session(sql.FieldIsNull(FieldSupersededBy))
-}
-
-// SupersededByNotNil applies the NotNil predicate on the "superseded_by" field.
-func SupersededByNotNil() predicate.Session {
-	return predicate.Session(sql.FieldNotNull(FieldSupersededBy))
-}
-
-// SupersededByEqualFold applies the EqualFold predicate on the "superseded_by" field.
-func SupersededByEqualFold(v string) predicate.Session {
-	return predicate.Session(sql.FieldEqualFold(FieldSupersededBy, v))
-}
-
-// SupersededByContainsFold applies the ContainsFold predicate on the "superseded_by" field.
-func SupersededByContainsFold(v string) predicate.Session {
-	return predicate.Session(sql.FieldContainsFold(FieldSupersededBy, v))
-}
-
 // HasUser applies the HasEdge predicate on the "user" edge.
 func HasUser() predicate.Session {
 	return predicate.Session(func(s *sql.Selector) {
@@ -560,52 +480,6 @@ func HasUser() predicate.Session {
 func HasUserWith(preds ...predicate.User) predicate.Session {
 	return predicate.Session(func(s *sql.Selector) {
 		step := newUserStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
-// HasSuccessor applies the HasEdge predicate on the "successor" edge.
-func HasSuccessor() predicate.Session {
-	return predicate.Session(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, SuccessorTable, SuccessorColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasSuccessorWith applies the HasEdge predicate on the "successor" edge with a given conditions (other predicates).
-func HasSuccessorWith(preds ...predicate.Session) predicate.Session {
-	return predicate.Session(func(s *sql.Selector) {
-		step := newSuccessorStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
-// HasPredecessor applies the HasEdge predicate on the "predecessor" edge.
-func HasPredecessor() predicate.Session {
-	return predicate.Session(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, PredecessorTable, PredecessorColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasPredecessorWith applies the HasEdge predicate on the "predecessor" edge with a given conditions (other predicates).
-func HasPredecessorWith(preds ...predicate.Session) predicate.Session {
-	return predicate.Session(func(s *sql.Selector) {
-		step := newPredecessorStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

@@ -2,7 +2,17 @@ min_version: 2.2.0
 lefthook: go tool lefthook
 
 pre-commit:
+  piped: true
   jobs:
+    - name: generate
+      run: |
+        go generate ./...
+        git add -- \
+          dist/openapi.yaml \
+          ':(glob)internal/api/**/*.gen.go' \
+          ':(glob)internal/ent/**/*.go' \
+          ':(exclude)internal/ent/generate.go' \
+          ':(exclude,glob)internal/ent/schema/**'
     - name: gofmt
       glob: "*.go"
       run: gofmt -w -- {staged_files}

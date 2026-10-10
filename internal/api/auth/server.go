@@ -87,10 +87,10 @@ func (s *Server) Refresh(ctx context.Context, _ RefreshRequestObject) (RefreshRe
 	if !ok {
 		return Refresh401JSONResponse{UnauthorizedJSONResponse: UnauthorizedJSONResponse{Message: "authentication required"}}, nil
 	}
-	token, err := s.auth.Refresh(ctx, principal, metadataFromContext(ctx))
+	token, err := s.auth.Refresh(ctx, principal)
 	if err != nil {
-		if errors.Is(err, authservice.ErrSessionSuperseded) {
-			return Refresh409JSONResponse(common.Error{Message: err.Error()}), nil
+		if errors.Is(err, authservice.ErrInvalidSession) {
+			return Refresh401JSONResponse{UnauthorizedJSONResponse: UnauthorizedJSONResponse{Message: "authentication required"}}, nil
 		}
 		return nil, err
 	}

@@ -50,6 +50,10 @@ func validationErrorHandler(_ context.Context, err error, w http.ResponseWriter,
 	} else if status == http.StatusMethodNotAllowed {
 		message = "method not allowed"
 	}
+	writeAPIError(w, status, message)
+}
+
+func writeAPIError(w http.ResponseWriter, status int, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(common.Error{Message: message})

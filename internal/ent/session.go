@@ -32,8 +32,6 @@ type Session struct {
 	RevokedAt *time.Time `json:"revoked_at,omitempty"`
 	// ExpiresAt holds the value of the "expires_at" field.
 	ExpiresAt time.Time `json:"expires_at,omitempty"`
-	// SupersededBy holds the value of the "superseded_by" field.
-	SupersededBy *string `json:"superseded_by,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the SessionQuery when eager-loading is set.
 	Edges        SessionEdges `json:"edges"`
@@ -44,13 +42,9 @@ type Session struct {
 type SessionEdges struct {
 	// User holds the value of the user edge.
 	User *User `json:"user,omitempty"`
-	// Successor holds the value of the successor edge.
-	Successor *Session `json:"successor,omitempty"`
-	// Predecessor holds the value of the predecessor edge.
-	Predecessor *Session `json:"predecessor,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [1]bool
 }
 
 // UserOrErr returns the User value or an error if the edge
@@ -64,28 +58,6 @@ func (e SessionEdges) UserOrErr() (*User, error) {
 	return nil, &NotLoadedError{edge: "user"}
 }
 
-// SuccessorOrErr returns the Successor value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e SessionEdges) SuccessorOrErr() (*Session, error) {
-	if e.Successor != nil {
-		return e.Successor, nil
-	} else if e.loadedTypes[1] {
-		return nil, &NotFoundError{label: session.Label}
-	}
-	return nil, &NotLoadedError{edge: "successor"}
-}
-
-// PredecessorOrErr returns the Predecessor value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e SessionEdges) PredecessorOrErr() (*Session, error) {
-	if e.Predecessor != nil {
-		return e.Predecessor, nil
-	} else if e.loadedTypes[2] {
-		return nil, &NotFoundError{label: session.Label}
-	}
-	return nil, &NotLoadedError{edge: "predecessor"}
-}
-
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Session) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -93,7 +65,7 @@ func (*Session) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case session.FieldUserID:
 			values[i] = new(sql.NullInt64)
-		case session.FieldID, session.FieldSessionSecret, session.FieldUserAgent, session.FieldIP, session.FieldSupersededBy:
+		case session.FieldID, session.FieldSessionSecret, session.FieldUserAgent, session.FieldIP:
 			values[i] = new(sql.NullString)
 		case session.FieldCreatedAt, session.FieldRevokedAt, session.FieldExpiresAt:
 			values[i] = new(sql.NullTime)
@@ -163,13 +135,6 @@ func (_m *Session) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.ExpiresAt = value.Time
 			}
-		case session.FieldSupersededBy:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field superseded_by", values[i])
-			} else if value.Valid {
-				_m.SupersededBy = new(string)
-				*_m.SupersededBy = value.String
-			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -186,16 +151,6 @@ func (_m *Session) Value(name string) (ent.Value, error) {
 // QueryUser queries the "user" edge of the Session entity.
 func (_m *Session) QueryUser() *UserQuery {
 	return NewSessionClient(_m.config).QueryUser(_m)
-}
-
-// QuerySuccessor queries the "successor" edge of the Session entity.
-func (_m *Session) QuerySuccessor() *SessionQuery {
-	return NewSessionClient(_m.config).QuerySuccessor(_m)
-}
-
-// QueryPredecessor queries the "predecessor" edge of the Session entity.
-func (_m *Session) QueryPredecessor() *SessionQuery {
-	return NewSessionClient(_m.config).QueryPredecessor(_m)
 }
 
 // Update returns a builder for updating this Session.
@@ -246,11 +201,6 @@ func (_m *Session) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("expires_at=")
 	builder.WriteString(_m.ExpiresAt.Format(time.ANSIC))
-	builder.WriteString(", ")
-	if v := _m.SupersededBy; v != nil {
-		builder.WriteString("superseded_by=")
-		builder.WriteString(*v)
-	}
 	builder.WriteByte(')')
 	return builder.String()
 }

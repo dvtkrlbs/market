@@ -28,14 +28,8 @@ const (
 	FieldRevokedAt = "revoked_at"
 	// FieldExpiresAt holds the string denoting the expires_at field in the database.
 	FieldExpiresAt = "expires_at"
-	// FieldSupersededBy holds the string denoting the superseded_by field in the database.
-	FieldSupersededBy = "superseded_by"
 	// EdgeUser holds the string denoting the user edge name in mutations.
 	EdgeUser = "user"
-	// EdgeSuccessor holds the string denoting the successor edge name in mutations.
-	EdgeSuccessor = "successor"
-	// EdgePredecessor holds the string denoting the predecessor edge name in mutations.
-	EdgePredecessor = "predecessor"
 	// UserFieldID holds the string denoting the ID field of the User.
 	UserFieldID = "id"
 	// Table holds the table name of the session in the database.
@@ -47,14 +41,6 @@ const (
 	UserInverseTable = "users"
 	// UserColumn is the table column denoting the user relation/edge.
 	UserColumn = "user_id"
-	// SuccessorTable is the table that holds the successor relation/edge.
-	SuccessorTable = "sessions"
-	// SuccessorColumn is the table column denoting the successor relation/edge.
-	SuccessorColumn = "superseded_by"
-	// PredecessorTable is the table that holds the predecessor relation/edge.
-	PredecessorTable = "sessions"
-	// PredecessorColumn is the table column denoting the predecessor relation/edge.
-	PredecessorColumn = "superseded_by"
 )
 
 // Columns holds all SQL columns for session fields.
@@ -67,7 +53,6 @@ var Columns = []string{
 	FieldCreatedAt,
 	FieldRevokedAt,
 	FieldExpiresAt,
-	FieldSupersededBy,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -128,29 +113,10 @@ func ByExpiresAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldExpiresAt, opts...).ToFunc()
 }
 
-// BySupersededBy orders the results by the superseded_by field.
-func BySupersededBy(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldSupersededBy, opts...).ToFunc()
-}
-
 // ByUserField orders the results by user field.
 func ByUserField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newUserStep(), sql.OrderByField(field, opts...))
-	}
-}
-
-// BySuccessorField orders the results by successor field.
-func BySuccessorField(field string, opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newSuccessorStep(), sql.OrderByField(field, opts...))
-	}
-}
-
-// ByPredecessorField orders the results by predecessor field.
-func ByPredecessorField(field string, opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newPredecessorStep(), sql.OrderByField(field, opts...))
 	}
 }
 func newUserStep() *sqlgraph.Step {
@@ -158,19 +124,5 @@ func newUserStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(UserInverseTable, UserFieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, UserTable, UserColumn),
-	)
-}
-func newSuccessorStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(Table, FieldID),
-		sqlgraph.Edge(sqlgraph.O2O, true, SuccessorTable, SuccessorColumn),
-	)
-}
-func newPredecessorStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(Table, FieldID),
-		sqlgraph.Edge(sqlgraph.O2O, false, PredecessorTable, PredecessorColumn),
 	)
 }

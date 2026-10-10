@@ -558,25 +558,21 @@ func (m *EntryMutation) ResetEdge(name string) error {
 // SessionMutation represents an operation that mutates the Session nodes in the graph.
 type SessionMutation struct {
 	config
-	op                 Op
-	typ                string
-	id                 *string
-	session_secret     *string
-	user_agent         *string
-	ip                 *string
-	created_at         *time.Time
-	revoked_at         *time.Time
-	expires_at         *time.Time
-	clearedFields      map[string]struct{}
-	user               *int
-	cleareduser        bool
-	successor          *string
-	clearedsuccessor   bool
-	predecessor        *string
-	clearedpredecessor bool
-	done               bool
-	oldValue           func(context.Context) (*Session, error)
-	predicates         []predicate.Session
+	op             Op
+	typ            string
+	id             *string
+	session_secret *string
+	user_agent     *string
+	ip             *string
+	created_at     *time.Time
+	revoked_at     *time.Time
+	expires_at     *time.Time
+	clearedFields  map[string]struct{}
+	user           *int
+	cleareduser    bool
+	done           bool
+	oldValue       func(context.Context) (*Session, error)
+	predicates     []predicate.Session
 }
 
 var _ ent.Mutation = (*SessionMutation)(nil)
@@ -974,55 +970,6 @@ func (m *SessionMutation) ResetExpiresAt() {
 	m.expires_at = nil
 }
 
-// SetSupersededBy sets the "superseded_by" field.
-func (m *SessionMutation) SetSupersededBy(s string) {
-	m.successor = &s
-}
-
-// SupersededBy returns the value of the "superseded_by" field in the mutation.
-func (m *SessionMutation) SupersededBy() (r string, exists bool) {
-	v := m.successor
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldSupersededBy returns the old "superseded_by" field's value of the Session entity.
-// If the Session object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *SessionMutation) OldSupersededBy(ctx context.Context) (v *string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldSupersededBy is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldSupersededBy requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldSupersededBy: %w", err)
-	}
-	return oldValue.SupersededBy, nil
-}
-
-// ClearSupersededBy clears the value of the "superseded_by" field.
-func (m *SessionMutation) ClearSupersededBy() {
-	m.successor = nil
-	m.clearedFields[session.FieldSupersededBy] = struct{}{}
-}
-
-// SupersededByCleared returns if the "superseded_by" field was cleared in this mutation.
-func (m *SessionMutation) SupersededByCleared() bool {
-	_, ok := m.clearedFields[session.FieldSupersededBy]
-	return ok
-}
-
-// ResetSupersededBy resets all changes to the "superseded_by" field.
-func (m *SessionMutation) ResetSupersededBy() {
-	m.successor = nil
-	delete(m.clearedFields, session.FieldSupersededBy)
-}
-
 // ClearUser clears the "user" edge to the User entity.
 func (m *SessionMutation) ClearUser() {
 	m.cleareduser = true
@@ -1048,85 +995,6 @@ func (m *SessionMutation) UserIDs() (ids []int) {
 func (m *SessionMutation) ResetUser() {
 	m.user = nil
 	m.cleareduser = false
-}
-
-// SetSuccessorID sets the "successor" edge to the Session entity by id.
-func (m *SessionMutation) SetSuccessorID(id string) {
-	m.successor = &id
-}
-
-// ClearSuccessor clears the "successor" edge to the Session entity.
-func (m *SessionMutation) ClearSuccessor() {
-	m.clearedsuccessor = true
-	m.clearedFields[session.FieldSupersededBy] = struct{}{}
-}
-
-// SuccessorCleared reports if the "successor" edge to the Session entity was cleared.
-func (m *SessionMutation) SuccessorCleared() bool {
-	return m.SupersededByCleared() || m.clearedsuccessor
-}
-
-// SuccessorID returns the "successor" edge ID in the mutation.
-func (m *SessionMutation) SuccessorID() (id string, exists bool) {
-	if m.successor != nil {
-		return *m.successor, true
-	}
-	return
-}
-
-// SuccessorIDs returns the "successor" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// SuccessorID instead. It exists only for internal usage by the builders.
-func (m *SessionMutation) SuccessorIDs() (ids []string) {
-	if id := m.successor; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetSuccessor resets all changes to the "successor" edge.
-func (m *SessionMutation) ResetSuccessor() {
-	m.successor = nil
-	m.clearedsuccessor = false
-}
-
-// SetPredecessorID sets the "predecessor" edge to the Session entity by id.
-func (m *SessionMutation) SetPredecessorID(id string) {
-	m.predecessor = &id
-}
-
-// ClearPredecessor clears the "predecessor" edge to the Session entity.
-func (m *SessionMutation) ClearPredecessor() {
-	m.clearedpredecessor = true
-}
-
-// PredecessorCleared reports if the "predecessor" edge to the Session entity was cleared.
-func (m *SessionMutation) PredecessorCleared() bool {
-	return m.clearedpredecessor
-}
-
-// PredecessorID returns the "predecessor" edge ID in the mutation.
-func (m *SessionMutation) PredecessorID() (id string, exists bool) {
-	if m.predecessor != nil {
-		return *m.predecessor, true
-	}
-	return
-}
-
-// PredecessorIDs returns the "predecessor" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// PredecessorID instead. It exists only for internal usage by the builders.
-func (m *SessionMutation) PredecessorIDs() (ids []string) {
-	if id := m.predecessor; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetPredecessor resets all changes to the "predecessor" edge.
-func (m *SessionMutation) ResetPredecessor() {
-	m.predecessor = nil
-	m.clearedpredecessor = false
 }
 
 // Where appends a list predicates to the SessionMutation builder.
@@ -1163,7 +1031,7 @@ func (m *SessionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *SessionMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 7)
 	if m.session_secret != nil {
 		fields = append(fields, session.FieldSessionSecret)
 	}
@@ -1184,9 +1052,6 @@ func (m *SessionMutation) Fields() []string {
 	}
 	if m.expires_at != nil {
 		fields = append(fields, session.FieldExpiresAt)
-	}
-	if m.successor != nil {
-		fields = append(fields, session.FieldSupersededBy)
 	}
 	return fields
 }
@@ -1210,8 +1075,6 @@ func (m *SessionMutation) Field(name string) (ent.Value, bool) {
 		return m.RevokedAt()
 	case session.FieldExpiresAt:
 		return m.ExpiresAt()
-	case session.FieldSupersededBy:
-		return m.SupersededBy()
 	}
 	return nil, false
 }
@@ -1235,8 +1098,6 @@ func (m *SessionMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldRevokedAt(ctx)
 	case session.FieldExpiresAt:
 		return m.OldExpiresAt(ctx)
-	case session.FieldSupersededBy:
-		return m.OldSupersededBy(ctx)
 	}
 	return nil, fmt.Errorf("unknown Session field %s", name)
 }
@@ -1295,13 +1156,6 @@ func (m *SessionMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetExpiresAt(v)
 		return nil
-	case session.FieldSupersededBy:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetSupersededBy(v)
-		return nil
 	}
 	return fmt.Errorf("unknown Session field %s", name)
 }
@@ -1344,9 +1198,6 @@ func (m *SessionMutation) ClearedFields() []string {
 	if m.FieldCleared(session.FieldRevokedAt) {
 		fields = append(fields, session.FieldRevokedAt)
 	}
-	if m.FieldCleared(session.FieldSupersededBy) {
-		fields = append(fields, session.FieldSupersededBy)
-	}
 	return fields
 }
 
@@ -1369,9 +1220,6 @@ func (m *SessionMutation) ClearField(name string) error {
 		return nil
 	case session.FieldRevokedAt:
 		m.ClearRevokedAt()
-		return nil
-	case session.FieldSupersededBy:
-		m.ClearSupersededBy()
 		return nil
 	}
 	return fmt.Errorf("unknown Session nullable field %s", name)
@@ -1402,24 +1250,15 @@ func (m *SessionMutation) ResetField(name string) error {
 	case session.FieldExpiresAt:
 		m.ResetExpiresAt()
 		return nil
-	case session.FieldSupersededBy:
-		m.ResetSupersededBy()
-		return nil
 	}
 	return fmt.Errorf("unknown Session field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *SessionMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 1)
 	if m.user != nil {
 		edges = append(edges, session.EdgeUser)
-	}
-	if m.successor != nil {
-		edges = append(edges, session.EdgeSuccessor)
-	}
-	if m.predecessor != nil {
-		edges = append(edges, session.EdgePredecessor)
 	}
 	return edges
 }
@@ -1432,21 +1271,13 @@ func (m *SessionMutation) AddedIDs(name string) []ent.Value {
 		if id := m.user; id != nil {
 			return []ent.Value{*id}
 		}
-	case session.EdgeSuccessor:
-		if id := m.successor; id != nil {
-			return []ent.Value{*id}
-		}
-	case session.EdgePredecessor:
-		if id := m.predecessor; id != nil {
-			return []ent.Value{*id}
-		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *SessionMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 1)
 	return edges
 }
 
@@ -1458,15 +1289,9 @@ func (m *SessionMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *SessionMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 1)
 	if m.cleareduser {
 		edges = append(edges, session.EdgeUser)
-	}
-	if m.clearedsuccessor {
-		edges = append(edges, session.EdgeSuccessor)
-	}
-	if m.clearedpredecessor {
-		edges = append(edges, session.EdgePredecessor)
 	}
 	return edges
 }
@@ -1477,10 +1302,6 @@ func (m *SessionMutation) EdgeCleared(name string) bool {
 	switch name {
 	case session.EdgeUser:
 		return m.cleareduser
-	case session.EdgeSuccessor:
-		return m.clearedsuccessor
-	case session.EdgePredecessor:
-		return m.clearedpredecessor
 	}
 	return false
 }
@@ -1492,12 +1313,6 @@ func (m *SessionMutation) ClearEdge(name string) error {
 	case session.EdgeUser:
 		m.ClearUser()
 		return nil
-	case session.EdgeSuccessor:
-		m.ClearSuccessor()
-		return nil
-	case session.EdgePredecessor:
-		m.ClearPredecessor()
-		return nil
 	}
 	return fmt.Errorf("unknown Session unique edge %s", name)
 }
@@ -1508,12 +1323,6 @@ func (m *SessionMutation) ResetEdge(name string) error {
 	switch name {
 	case session.EdgeUser:
 		m.ResetUser()
-		return nil
-	case session.EdgeSuccessor:
-		m.ResetSuccessor()
-		return nil
-	case session.EdgePredecessor:
-		m.ResetPredecessor()
 		return nil
 	}
 	return fmt.Errorf("unknown Session edge %s", name)

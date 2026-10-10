@@ -399,20 +399,6 @@ func (response Refresh401JSONResponse) VisitRefreshResponse(w http.ResponseWrite
 	return err
 }
 
-type Refresh409JSONResponse externalRef0.Error
-
-func (response Refresh409JSONResponse) VisitRefreshResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(409)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
 type RegisterRequestObject struct {
 	Body *RegisterJSONRequestBody
 }

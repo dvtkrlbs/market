@@ -18,9 +18,10 @@ Enable the repository's Lefthook-managed Git hooks once after cloning:
 make hooks
 ```
 
-Lefthook is pinned as a Go tool. The pre-commit hook runs `gofmt` on staged Go
-files and re-stages them. The pre-push hook checks all tracked Go files without
-modifying them.
+Lefthook is pinned as a Go tool. The pre-commit hook runs `go generate ./...`,
+stages its generated API, Ent, and OpenAPI outputs, then runs `gofmt` on staged
+Go files and re-stages them. The pre-push hook checks all tracked Go files
+without modifying them.
 
 ## Start locally
 
@@ -50,7 +51,8 @@ curl http://localhost:8080/orders -H "Authorization: Bearer $TOKEN"
 ```
 
 Login returns an opaque database-backed Bearer token. Sessions expire after 30
-days; `POST /auth/refresh` rotates the token and `POST /auth/logout` revokes it.
+days; `POST /auth/refresh` extends the same session for another 30 days and
+`POST /auth/logout` revokes it.
 Session IP metadata prefers `Forwarded` and `X-Forwarded-For`, so deployments
 must configure their reverse proxy to replace untrusted forwarding headers.
 
