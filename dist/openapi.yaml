@@ -26,7 +26,7 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
-      description: User mismatch or store administration required
+      description: User mismatch, store administration or global admin membership required
     StoreNotFound:
       content:
         application/json:
@@ -340,6 +340,32 @@ paths:
           description: Placeholder response for the future orders API
       security:
       - SessionAuth: []
+  /stores/{storeId}/approve:
+    parameters:
+    - in: path
+      name: storeId
+      required: true
+      schema:
+        minimum: 1.0
+        type: integer
+    post:
+      description: Approves a non-deleted store. Requires the authenticated user to be listed in the global admins table. Repeated approval is idempotent.
+      operationId: approveStore
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Store"
+          description: Store approved
+        "401":
+          $ref: "#/components/responses/StoreUnauthorized"
+        "403":
+          $ref: "#/components/responses/StoreForbidden"
+        "404":
+          $ref: "#/components/responses/StoreNotFound"
+      security:
+      - SessionAuth: []
   /users/{userId}/stores:
     get:
       operationId: listStores
@@ -437,7 +463,7 @@ paths:
         minimum: 1.0
         type: integer
     patch:
-      description: Updates a store administered by the requesting user.
+      description: Updates a store administered by the requesting user. Changing approval also requires global admin membership.
       operationId: updateStore
       requestBody:
         content:

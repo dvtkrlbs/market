@@ -26,6 +26,8 @@ const (
 	EdgeSessions = "sessions"
 	// EdgeStoreAdmins holds the string denoting the store_admins edge name in mutations.
 	EdgeStoreAdmins = "store_admins"
+	// EdgeAdmin holds the string denoting the admin edge name in mutations.
+	EdgeAdmin = "admin"
 	// SessionFieldID holds the string denoting the ID field of the Session.
 	SessionFieldID = "session_id"
 	// Table holds the table name of the user in the database.
@@ -44,6 +46,13 @@ const (
 	StoreAdminsInverseTable = "store_admins"
 	// StoreAdminsColumn is the table column denoting the store_admins relation/edge.
 	StoreAdminsColumn = "user_id"
+	// AdminTable is the table that holds the admin relation/edge.
+	AdminTable = "admins"
+	// AdminInverseTable is the table name for the Admin entity.
+	// It exists in this package in order to avoid circular dependency with the "admin" package.
+	AdminInverseTable = "admins"
+	// AdminColumn is the table column denoting the admin relation/edge.
+	AdminColumn = "user_id"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -127,6 +136,13 @@ func ByStoreAdmins(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newStoreAdminsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByAdminField orders the results by admin field.
+func ByAdminField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newAdminStep(), sql.OrderByField(field, opts...))
+	}
+}
 func newSessionsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -139,5 +155,12 @@ func newStoreAdminsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(StoreAdminsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, StoreAdminsTable, StoreAdminsColumn),
+	)
+}
+func newAdminStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(AdminInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, false, AdminTable, AdminColumn),
 	)
 }

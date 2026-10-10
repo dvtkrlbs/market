@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/dvtkrlbs/market/internal/ent/admin"
 	"github.com/dvtkrlbs/market/internal/ent/session"
 	"github.com/dvtkrlbs/market/internal/ent/storeadmin"
 	"github.com/dvtkrlbs/market/internal/ent/user"
@@ -90,6 +91,25 @@ func (_c *UserCreate) AddStoreAdmins(v ...*StoreAdmin) *UserCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddStoreAdminIDs(ids...)
+}
+
+// SetAdminID sets the "admin" edge to the Admin entity by ID.
+func (_c *UserCreate) SetAdminID(id int) *UserCreate {
+	_c.mutation.SetAdminID(id)
+	return _c
+}
+
+// SetNillableAdminID sets the "admin" edge to the Admin entity by ID if the given value is not nil.
+func (_c *UserCreate) SetNillableAdminID(id *int) *UserCreate {
+	if id != nil {
+		_c = _c.SetAdminID(*id)
+	}
+	return _c
+}
+
+// SetAdmin sets the "admin" edge to the Admin entity.
+func (_c *UserCreate) SetAdmin(v *Admin) *UserCreate {
+	return _c.SetAdminID(v.ID)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -216,6 +236,22 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(storeadmin.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.AdminIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   user.AdminTable,
+			Columns: []string{user.AdminColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(admin.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

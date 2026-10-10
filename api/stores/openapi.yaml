@@ -3,6 +3,32 @@ info:
   title: Market stores API
   version: 0.1.0
 paths:
+  /stores/{storeId}/approve:
+    parameters:
+      - name: storeId
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+    post:
+      operationId: approveStore
+      security:
+        - SessionAuth: []
+      description: Approves a non-deleted store. Requires the authenticated user to be listed in the global admins table. Repeated approval is idempotent.
+      responses:
+        '200':
+          description: Store approved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Store'
+        '401':
+          $ref: '#/components/responses/StoreUnauthorized'
+        '403':
+          $ref: '#/components/responses/StoreForbidden'
+        '404':
+          $ref: '#/components/responses/StoreNotFound'
   /users/{userId}/stores:
     parameters:
       - $ref: '#/components/parameters/StoreUserId'
@@ -86,7 +112,7 @@ paths:
       operationId: updateStore
       security:
         - SessionAuth: []
-      description: Updates a store administered by the requesting user.
+      description: Updates a store administered by the requesting user. Changing approval also requires global admin membership.
       requestBody:
         required: true
         content:
@@ -149,7 +175,7 @@ components:
           schema:
             $ref: '../common/openapi.yaml#/components/schemas/Error'
     StoreForbidden:
-      description: User mismatch or store administration required
+      description: User mismatch, store administration or global admin membership required
       content:
         application/json:
           schema:

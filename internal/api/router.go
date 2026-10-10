@@ -25,37 +25,38 @@ func NewRouter(service *bookkeeping.Service, authentication *authservice.Service
 	}
 	mux := http.NewServeMux()
 	stores.HandlerFromMux(
-		stores.NewStrictHandlerWithOptions(stores.NewServer(storeService), nil, stores.StrictHTTPServerOptions{
-			RequestErrorHandlerFunc: func(w http.ResponseWriter, _ *http.Request, _ error) {
-				writeAPIError(w, http.StatusBadRequest, "invalid request")
-			},
-			ResponseErrorHandlerFunc: func(w http.ResponseWriter, _ *http.Request, _ error) {
-				writeAPIError(w, http.StatusInternalServerError, "internal server error")
-			},
+		stores.NewStrictHandlerWithOptions(stores.NewServer(storeService, authentication), nil, stores.StrictHTTPServerOptions{
+			RequestErrorHandlerFunc:  requestErrorHandler,
+			ResponseErrorHandlerFunc: responseErrorHandler,
 		}),
 		mux,
 	)
 
 	health.HandlerFromMux(
-		health.NewStrictHandler(health.NewServer(), nil),
+		health.NewStrictHandlerWithOptions(health.NewServer(), nil, health.StrictHTTPServerOptions{
+			RequestErrorHandlerFunc:  requestErrorHandler,
+			ResponseErrorHandlerFunc: responseErrorHandler,
+		}),
 		mux,
 	)
 	entries.HandlerFromMux(
-		entries.NewStrictHandler(entries.NewServer(service), nil),
+		entries.NewStrictHandlerWithOptions(entries.NewServer(service), nil, entries.StrictHTTPServerOptions{
+			RequestErrorHandlerFunc:  requestErrorHandler,
+			ResponseErrorHandlerFunc: responseErrorHandler,
+		}),
 		mux,
 	)
 	orders.HandlerFromMux(
-		orders.NewStrictHandler(orders.NewServer(), nil),
+		orders.NewStrictHandlerWithOptions(orders.NewServer(), nil, orders.StrictHTTPServerOptions{
+			RequestErrorHandlerFunc:  requestErrorHandler,
+			ResponseErrorHandlerFunc: responseErrorHandler,
+		}),
 		mux,
 	)
 	authapi.HandlerFromMux(
 		authapi.NewStrictHandlerWithOptions(authapi.NewServer(authentication, signer), nil, authapi.StrictHTTPServerOptions{
-			RequestErrorHandlerFunc: func(w http.ResponseWriter, _ *http.Request, _ error) {
-				writeAPIError(w, http.StatusBadRequest, "invalid request")
-			},
-			ResponseErrorHandlerFunc: func(w http.ResponseWriter, _ *http.Request, _ error) {
-				writeAPIError(w, http.StatusInternalServerError, "internal server error")
-			},
+			RequestErrorHandlerFunc:  requestErrorHandler,
+			ResponseErrorHandlerFunc: responseErrorHandler,
 		}),
 		mux,
 	)

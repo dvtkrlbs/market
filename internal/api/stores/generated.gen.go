@@ -89,6 +89,9 @@ type UpdateStoreJSONRequestBody = UpdateStore
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 
+	// (POST /stores/{storeId}/approve)
+	ApproveStore(w http.ResponseWriter, r *http.Request, storeId int)
+
 	// (GET /users/{userId}/stores)
 	ListStores(w http.ResponseWriter, r *http.Request, userId StoreUserId, params ListStoresParams)
 
@@ -113,6 +116,32 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// ApproveStore operation middleware
+func (siw *ServerInterfaceWrapper) ApproveStore(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "storeId" -------------
+	var storeId int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "storeId", r.PathValue("storeId"), &storeId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "storeId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ApproveStore(w, r, storeId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // ListStores operation middleware
 func (siw *ServerInterfaceWrapper) ListStores(w http.ResponseWriter, r *http.Request) {
@@ -407,6 +436,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 		ErrorHandlerFunc:   options.ErrorHandlerFunc,
 	}
 
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/stores/{storeId}/approve", wrapper.ApproveStore)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/users/{userId}/stores", wrapper.ListStores)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/users/{userId}/stores", wrapper.CreateStore)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/users/{userId}/stores/{storeId}", wrapper.DeleteStore)
@@ -423,6 +453,70 @@ type StoreForbiddenJSONResponse externalRef0.Error
 type StoreNotFoundJSONResponse externalRef0.Error
 
 type StoreUnauthorizedJSONResponse externalRef0.Error
+
+type ApproveStoreRequestObject struct {
+	StoreId int `json:"storeId"`
+}
+
+type ApproveStoreResponseObject interface {
+	VisitApproveStoreResponse(w http.ResponseWriter) error
+}
+
+type ApproveStore200JSONResponse Store
+
+func (response ApproveStore200JSONResponse) VisitApproveStoreResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveStore401JSONResponse struct{ StoreUnauthorizedJSONResponse }
+
+func (response ApproveStore401JSONResponse) VisitApproveStoreResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveStore403JSONResponse struct{ StoreForbiddenJSONResponse }
+
+func (response ApproveStore403JSONResponse) VisitApproveStoreResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveStore404JSONResponse struct{ StoreNotFoundJSONResponse }
+
+func (response ApproveStore404JSONResponse) VisitApproveStoreResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
 
 type ListStoresRequestObject struct {
 	UserId StoreUserId `json:"userId"`
@@ -747,6 +841,9 @@ func (response UpdateStore404JSONResponse) VisitUpdateStoreResponse(w http.Respo
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 
+	// (POST /stores/{storeId}/approve)
+	ApproveStore(ctx context.Context, request ApproveStoreRequestObject) (ApproveStoreResponseObject, error)
+
 	// (GET /users/{userId}/stores)
 	ListStores(ctx context.Context, request ListStoresRequestObject) (ListStoresResponseObject, error)
 
@@ -800,6 +897,32 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictHTTPServerOptions
+}
+
+// ApproveStore operation middleware
+func (sh *strictHandler) ApproveStore(w http.ResponseWriter, r *http.Request, storeId int) {
+	var request ApproveStoreRequestObject
+
+	request.StoreId = storeId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ApproveStore(ctx, request.(ApproveStoreRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ApproveStore")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ApproveStoreResponseObject); ok {
+		if err := validResponse.VisitApproveStoreResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // ListStores operation middleware

@@ -92,7 +92,7 @@ func serve(service *bookkeeping.Service, authentication *auth.Service, storeServ
 	if err != nil {
 		return err
 	}
-	server := &http.Server{Addr: *addr, Handler: handler, ReadHeaderTimeout: 5 * time.Second}
+	server := &http.Server{Addr: *addr, Handler: api.WithRequestLogging(handler), ReadHeaderTimeout: 5 * time.Second}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	go func() {

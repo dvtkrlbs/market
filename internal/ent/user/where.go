@@ -341,6 +341,29 @@ func HasStoreAdminsWith(preds ...predicate.StoreAdmin) predicate.User {
 	})
 }
 
+// HasAdmin applies the HasEdge predicate on the "admin" edge.
+func HasAdmin() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, AdminTable, AdminColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasAdminWith applies the HasEdge predicate on the "admin" edge with a given conditions (other predicates).
+func HasAdminWith(preds ...predicate.Admin) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newAdminStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.User) predicate.User {
 	return predicate.User(sql.AndPredicates(predicates...))

@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dvtkrlbs/market/internal/auth"
 	"github.com/dvtkrlbs/market/internal/database"
 	"github.com/dvtkrlbs/market/internal/ent"
 	"github.com/dvtkrlbs/market/internal/ent/storeadmin"
@@ -65,7 +66,7 @@ func TestStoreCRUDIntegration(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer scopedDB.Close()
-	for _, migration := range []string{"20261007000000_init.up.sql", "20261007000001_auth.up.sql", "20261010000000_stores.up.sql"} {
+	for _, migration := range []string{"20261007000000_init.up.sql", "20261007000001_auth.up.sql", "20261010000000_stores.up.sql", "20261010000001_admins.up.sql"} {
 		contents, err := migrations.FS.ReadFile(migration)
 		if err != nil {
 			t.Fatal(err)
@@ -81,6 +82,21 @@ func TestStoreCRUDIntegration(t *testing.T) {
 	defer client.Close()
 	first := client.User.Create().SetEmail("first@example.com").SetPasswordHash("test").SaveX(ctx)
 	second := client.User.Create().SetEmail("second@example.com").SetPasswordHash("test").SaveX(ctx)
+	authentication := auth.New(client)
+	if isAdmin, err := authentication.IsAdmin(ctx, first.ID); err != nil || isAdmin {
+		t.Fatalf("non-admin membership: %t, %v", isAdmin, err)
+	}
+	membership := client.Admin.Create().SetUserID(first.ID).SaveX(ctx)
+	if isAdmin, err := authentication.IsAdmin(ctx, first.ID); err != nil || !isAdmin {
+		t.Fatalf("admin membership: %t, %v", isAdmin, err)
+	}
+	if _, err := client.Admin.Create().SetUserID(first.ID).Save(ctx); !ent.IsConstraintError(err) {
+		t.Fatalf("duplicate admin: %v", err)
+	}
+	client.Admin.DeleteOne(membership).ExecX(ctx)
+	if isAdmin, err := authentication.IsAdmin(ctx, first.ID); err != nil || isAdmin {
+		t.Fatalf("revoked admin: %t, %v", isAdmin, err)
+	}
 	s := New(client)
 	created, err := s.Create(ctx, first.ID, "  Global shop  ")
 	if err != nil {
@@ -154,8 +170,11 @@ func TestStoreCRUDIntegration(t *testing.T) {
 	}
 	checkList(first.ID, "shop")
 	approved = true
-	if _, err := s.Update(ctx, second.ID, created.ID, Update{Approved: &approved}); err != nil {
+	if item, err := s.Approve(ctx, created.ID); err != nil || !item.Approved {
 		t.Fatal(err)
+	}
+	if item, err := s.Approve(ctx, created.ID); err != nil || !item.Approved {
+		t.Fatalf("repeated approval: %v", err)
 	}
 	if err := s.Delete(ctx, second.ID, created.ID); err != nil {
 		t.Fatal(err)
@@ -181,6 +200,12 @@ func TestStoreCRUDIntegration(t *testing.T) {
 	}
 	if err := s.Delete(ctx, first.ID, created.ID); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("delete missing: %v", err)
+	}
+	if _, err := s.Approve(ctx, created.ID); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("approve deleted store: %v", err)
+	}
+	if _, err := s.Approve(ctx, created.ID+other.ID+1000); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("approve missing store: %v", err)
 	}
 	// Membership failure rolls back store creation as well.
 	before := client.Store.Query().CountX(ctx)

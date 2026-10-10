@@ -8,6 +8,25 @@ import (
 )
 
 var (
+	// AdminsColumns holds the columns for the "admins" table.
+	AdminsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "user_id", Type: field.TypeInt, Unique: true},
+	}
+	// AdminsTable holds the schema information for the "admins" table.
+	AdminsTable = &schema.Table{
+		Name:       "admins",
+		Columns:    AdminsColumns,
+		PrimaryKey: []*schema.Column{AdminsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "admins_users_admin",
+				Columns:    []*schema.Column{AdminsColumns[1]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
 	// EntriesColumns holds the columns for the "entries" table.
 	EntriesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -126,6 +145,7 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		AdminsTable,
 		EntriesTable,
 		SessionsTable,
 		StoresTable,
@@ -135,6 +155,7 @@ var (
 )
 
 func init() {
+	AdminsTable.ForeignKeys[0].RefTable = UsersTable
 	SessionsTable.ForeignKeys[0].RefTable = UsersTable
 	StoreAdminsTable.ForeignKeys[0].RefTable = StoresTable
 	StoreAdminsTable.ForeignKeys[1].RefTable = UsersTable

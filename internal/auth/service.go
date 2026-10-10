@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/dvtkrlbs/market/internal/ent"
+	"github.com/dvtkrlbs/market/internal/ent/admin"
 	"github.com/dvtkrlbs/market/internal/ent/session"
 	"github.com/dvtkrlbs/market/internal/ent/user"
 )
@@ -87,6 +88,10 @@ func (s *Service) Register(ctx context.Context, email, password string) (*ent.Us
 		return nil, fmt.Errorf("create user: %w", err)
 	}
 	return created, nil
+}
+
+func (s *Service) IsAdmin(ctx context.Context, userID int) (bool, error) {
+	return s.client.Admin.Query().Where(admin.UserIDEQ(userID), admin.HasUserWith(user.DeletedAtIsNil())).Exist(ctx)
 }
 
 func (s *Service) Login(ctx context.Context, email, password string, metadata SessionMetadata) (SessionToken, error) {

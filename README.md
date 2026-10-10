@@ -46,7 +46,14 @@ go run ./cmd/market serve
 ```
 
 The API listens on `http://localhost:8080` and implements the modular contracts
-under `api/`:
+under `api/`.
+
+The server logs each request's method, path, status, duration, and response size
+using `slog`, including CORS and validation failures. Handler errors are logged
+server-side while clients receive a generic error. Request bodies, headers, and
+query strings are not included in request logs.
+
+Example requests:
 
 ```sh
 curl http://localhost:8080/health
@@ -94,14 +101,27 @@ require a session, and `{userId}` must match the authenticated user:
 - `GET /users/{userId}/stores/{storeId}`: an approved store, or any store the
   user administers.
 - `PATCH /users/{userId}/stores/{storeId}` with `name` and/or `approved`:
-  updates a store the user administers. StoreAdmins can approve their stores
-  for now; there is no separate market-wide approval role.
+  updates a store the user administers. Changing `approved` also requires
+  membership in the global `admins` table.
+- `POST /stores/{storeId}/approve`: approves a non-deleted store. The authenticated
+  user must be listed in `admins`; a StoreAdmin membership alone is insufficient.
+  Repeated approval returns the approved store without additional side effects.
 - `DELETE /users/{userId}/stores/{storeId}`: soft-deletes a store the user
   administers by setting `deleted_at`, retaining its `StoreAdmin` memberships.
   Deleted stores are excluded from `shop` and `manage` listings, reads, and updates.
 
 Store creation is open to any authenticated user. StoreAdmin memberships are
 unique per user/store pair; stores do not have an owning user.
+
+Apply the admin migration with `make migrate-apply`. Global admins are provisioned
+directly in the database for now (no admin membership is granted automatically):
+
+```sql
+INSERT INTO admins (user_id) VALUES (1) ON CONFLICT (user_id) DO NOTHING;
+```
+
+The approval handler checks current membership on every request. Removing an
+`admins` row revokes approval permission without requiring the user to sign out.
 
 The OpenAPI modules are stitched into a validated, self-contained contract with:
 

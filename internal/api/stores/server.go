@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	requesthelper "github.com/dvtkrlbs/market/internal/api/request"
 	"github.com/dvtkrlbs/market/internal/auth"
 	"github.com/dvtkrlbs/market/internal/ent"
 	storeservice "github.com/dvtkrlbs/market/internal/stores"
@@ -15,13 +16,40 @@ type service interface {
 	Get(context.Context, int, int) (*ent.Store, error)
 	Update(context.Context, int, int, storeservice.Update) (*ent.Store, error)
 	Delete(context.Context, int, int) error
+	Approve(context.Context, int) (*ent.Store, error)
 }
 
-type Server struct{ stores service }
+type Server struct {
+	stores service
+	admins requesthelper.AdminChecker
+}
 
 var _ StrictServerInterface = (*Server)(nil)
 
-func NewServer(stores service) *Server { return &Server{stores: stores} }
+func NewServer(stores service, admins requesthelper.AdminChecker) *Server {
+	return &Server{stores: stores, admins: admins}
+}
+
+func (s *Server) ApproveStore(ctx context.Context, input ApproveStoreRequestObject) (ApproveStoreResponseObject, error) {
+	if err := requesthelper.RequireAdmin(ctx, s.admins); err != nil {
+		switch {
+		case errors.Is(err, requesthelper.ErrUnauthenticated):
+			return ApproveStore401JSONResponse{StoreUnauthorizedJSONResponse{Message: err.Error()}}, nil
+		case errors.Is(err, requesthelper.ErrAdminRequired):
+			return ApproveStore403JSONResponse{StoreForbiddenJSONResponse{Message: err.Error()}}, nil
+		default:
+			return nil, err
+		}
+	}
+	item, err := s.stores.Approve(ctx, input.StoreId)
+	if errors.Is(err, storeservice.ErrNotFound) {
+		return ApproveStore404JSONResponse{StoreNotFoundJSONResponse{Message: err.Error()}}, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return ApproveStore200JSONResponse(storeResponse(item)), nil
+}
 
 func authorize(ctx context.Context, userID int) int {
 	principal, ok := auth.PrincipalFromContext(ctx)
@@ -106,6 +134,14 @@ func (s *Server) UpdateStore(ctx context.Context, request UpdateStoreRequestObje
 	}
 	if request.Body == nil {
 		return UpdateStore400JSONResponse{StoreBadRequestJSONResponse{Message: "request body is required"}}, nil
+	}
+	if request.Body.Approved != nil {
+		if err := requesthelper.RequireAdmin(ctx, s.admins); err != nil {
+			if errors.Is(err, requesthelper.ErrAdminRequired) {
+				return UpdateStore403JSONResponse{StoreForbiddenJSONResponse{Message: err.Error()}}, nil
+			}
+			return nil, err
+		}
 	}
 	item, err := s.stores.Update(ctx, request.UserId, request.StoreId, storeservice.Update{Name: request.Body.Name, Approved: request.Body.Approved})
 	switch {

@@ -48,6 +48,22 @@ func (s *stubService) Delete(_ context.Context, userID, storeID int) error {
 	return s.err
 }
 
+func (s *stubService) Approve(_ context.Context, storeID int) (*ent.Store, error) {
+	s.called, s.storeID = true, storeID
+	return &ent.Store{ID: storeID, Name: "Shop", Approved: true}, s.err
+}
+
+type stubAdmins struct {
+	allowed bool
+	err     error
+	userID  int
+}
+
+func (s *stubAdmins) IsAdmin(_ context.Context, userID int) (bool, error) {
+	s.userID = userID
+	return s.allowed, s.err
+}
+
 func TestStoreHTTP(t *testing.T) {
 	spec, err := openapi3.NewLoader().LoadFromData(apidoc.OpenAPI)
 	if err != nil {
@@ -90,7 +106,7 @@ func TestStoreHTTP(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			service := &stubService{err: tt.err}
-			handler := Handler(NewStrictHandlerWithOptions(NewServer(service), nil, StrictHTTPServerOptions{
+			handler := Handler(NewStrictHandlerWithOptions(NewServer(service, &stubAdmins{allowed: true}), nil, StrictHTTPServerOptions{
 				RequestErrorHandlerFunc:  func(w http.ResponseWriter, _ *http.Request, _ error) { http.Error(w, "invalid request", 400) },
 				ResponseErrorHandlerFunc: func(w http.ResponseWriter, _ *http.Request, _ error) { http.Error(w, "internal server error", 500) },
 			}))
@@ -144,7 +160,7 @@ func TestStoresRequireMatchingPrincipal(t *testing.T) {
 		for _, method := range []string{"GET", "POST", "PATCH", "DELETE"} {
 			t.Run(method+fmtID(userID), func(t *testing.T) {
 				service := &stubService{}
-				handler := Handler(NewStrictHandler(NewServer(service), nil))
+				handler := Handler(NewStrictHandler(NewServer(service, &stubAdmins{allowed: true}), nil))
 				path, body := "/users/1/stores/2", ""
 				if method == "POST" {
 					path, body = "/users/1/stores", `{"name":"Shop"}`
@@ -175,4 +191,89 @@ func fmtID(id int) string {
 		return "/unauthenticated"
 	}
 	return "/other-user"
+}
+
+func TestApproveStoreHTTP(t *testing.T) {
+	spec, err := openapi3.NewLoader().LoadFromData(apidoc.OpenAPI)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tt := range []struct {
+		name       string
+		path       string
+		userID     int
+		admin      bool
+		adminErr   error
+		serviceErr error
+		status     int
+		called     bool
+	}{
+		{"admin approves", "/stores/2/approve", 7, true, nil, nil, 200, true},
+		{"signed out", "/stores/2/approve", 0, false, nil, nil, 401, false},
+		{"store owner is not platform admin", "/stores/2/approve", 1, false, nil, nil, 403, false},
+		{"lookup error fails closed", "/stores/2/approve", 7, true, errors.New("database secret"), nil, 500, false},
+		{"store missing", "/stores/2/approve", 7, true, nil, storeservice.ErrNotFound, 404, true},
+		{"service error", "/stores/2/approve", 7, true, nil, errors.New("database secret"), 500, true},
+		{"invalid store ID", "/stores/0/approve", 7, true, nil, nil, 400, false},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			service := &stubService{err: tt.serviceErr}
+			admins := &stubAdmins{allowed: tt.admin, err: tt.adminErr}
+			handler := Handler(NewStrictHandlerWithOptions(NewServer(service, admins), nil, StrictHTTPServerOptions{
+				ResponseErrorHandlerFunc: func(w http.ResponseWriter, _ *http.Request, _ error) { http.Error(w, "internal server error", 500) },
+			}))
+			validator := nethttpmiddleware.OapiRequestValidatorWithOptions(spec, &nethttpmiddleware.Options{
+				Options: openapi3filter.Options{AuthenticationFunc: func(_ context.Context, _ *openapi3filter.AuthenticationInput) error { return nil }},
+			})
+			req := httptest.NewRequest("POST", tt.path, nil)
+			if tt.userID != 0 {
+				req = req.WithContext(auth.ContextWithPrincipal(req.Context(), &auth.Principal{User: &ent.User{ID: tt.userID}}))
+			}
+			response := httptest.NewRecorder()
+			validator(handler).ServeHTTP(response, req)
+			if response.Code != tt.status || service.called != tt.called {
+				t.Fatalf("status = %d, called = %t, body = %s", response.Code, service.called, response.Body.String())
+			}
+			if service.called && service.storeID != 2 {
+				t.Fatalf("store ID = %d", service.storeID)
+			}
+			if tt.status == 200 {
+				if admins.userID != tt.userID {
+					t.Fatalf("checked user ID = %d", admins.userID)
+				}
+				if response.Body.String() != "{\"approved\":true,\"id\":2,\"name\":\"Shop\"}\n" {
+					t.Fatalf("JSON = %s", response.Body.String())
+				}
+			}
+			if strings.Contains(response.Body.String(), "database secret") {
+				t.Fatal("internal error leaked")
+			}
+		})
+	}
+}
+
+func TestPatchApprovalRequiresGlobalAdmin(t *testing.T) {
+	for _, body := range []string{`{"approved":true}`, `{"approved":false}`} {
+		service := &stubService{}
+		admins := &stubAdmins{}
+		handler := Handler(NewStrictHandler(NewServer(service, admins), nil))
+		req := httptest.NewRequest("PATCH", "/users/1/stores/2", strings.NewReader(body))
+		req = req.WithContext(auth.ContextWithPrincipal(req.Context(), &auth.Principal{User: &ent.User{ID: 1}}))
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, req)
+		if response.Code != 403 || service.called || admins.userID != 1 {
+			t.Fatalf("status = %d, called = %t, checked user = %d", response.Code, service.called, admins.userID)
+		}
+	}
+	// Store owners can still edit names without platform admin membership.
+	service := &stubService{}
+	admins := &stubAdmins{}
+	handler := Handler(NewStrictHandler(NewServer(service, admins), nil))
+	req := httptest.NewRequest("PATCH", "/users/1/stores/2", strings.NewReader(`{"name":"Renamed"}`))
+	req = req.WithContext(auth.ContextWithPrincipal(req.Context(), &auth.Principal{User: &ent.User{ID: 1}}))
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, req)
+	if response.Code != 200 || !service.called || admins.userID != 0 {
+		t.Fatalf("status = %d", response.Code)
+	}
 }

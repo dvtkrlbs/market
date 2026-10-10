@@ -99,4 +99,72 @@ describe("admin stores", () => {
     await screen.findByRole("table");
     expect(fetch).toHaveBeenCalledTimes(3);
   });
+
+  it("approves a pending store through the admin endpoint and refreshes its status", async () => {
+    const approved = { ...stores[0], approved: true };
+    const fetch = vi
+      .fn<typeof globalThis.fetch>()
+      .mockResolvedValueOnce(Response.json(session))
+      .mockResolvedValueOnce(Response.json(stores))
+      .mockResolvedValueOnce(Response.json(approved))
+      .mockResolvedValueOnce(Response.json([approved, stores[1]]));
+    vi.stubGlobal("fetch", fetch);
+    await renderAdmin();
+    const button = await screen.findByRole("button", { name: "Approve Zebra Market" });
+    expect(screen.queryByRole("button", { name: "Approve Apple Market" })).toBeNull();
+    fireEvent.click(button);
+    await waitFor(() => expect(screen.queryByText("Awaiting approval")).toBeNull());
+    expect(fetch).toHaveBeenNthCalledWith(3, "http://localhost:8080/stores/2/approve", {
+      method: "POST",
+      credentials: "include",
+    });
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(4));
+    expect(screen.queryByRole("button", { name: "Approve Zebra Market" })).toBeNull();
+    expect(screen.getAllByText("Approved")).toHaveLength(2);
+  });
+
+  it("shows authorization errors without approving the row and allows retry", async () => {
+    const approved = { ...stores[0], approved: true };
+    const fetch = vi
+      .fn<typeof globalThis.fetch>()
+      .mockResolvedValueOnce(Response.json(session))
+      .mockResolvedValueOnce(Response.json(stores))
+      .mockResolvedValueOnce(Response.json({ message: "admin access required" }, { status: 403 }))
+      .mockResolvedValueOnce(Response.json(approved))
+      .mockResolvedValueOnce(Response.json([approved, stores[1]]));
+    vi.stubGlobal("fetch", fetch);
+    await renderAdmin();
+    fireEvent.click(await screen.findByRole("button", { name: "Approve Zebra Market" }));
+    expect((await screen.findByRole("alert")).textContent).toBe("admin access required");
+    expect(screen.getByText("Awaiting approval")).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: "Approve Zebra Market" }));
+    await waitFor(() => expect(screen.queryByText("Awaiting approval")).toBeNull());
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("disables the approve action during a request", async () => {
+    let resolve!: (response: Response) => void;
+    const approved = { ...stores[0], approved: true };
+    const fetch = vi
+      .fn<typeof globalThis.fetch>()
+      .mockResolvedValueOnce(Response.json(session))
+      .mockResolvedValueOnce(Response.json(stores))
+      .mockReturnValueOnce(
+        new Promise<Response>((done) => {
+          resolve = done;
+        }),
+      )
+      .mockResolvedValueOnce(Response.json([approved, stores[1]]));
+    vi.stubGlobal("fetch", fetch);
+    await renderAdmin();
+    const button = await screen.findByRole<HTMLButtonElement>("button", {
+      name: "Approve Zebra Market",
+    });
+    fireEvent.click(button);
+    await waitFor(() => expect(button.disabled).toBe(true));
+    fireEvent.click(button);
+    expect(fetch).toHaveBeenCalledTimes(3);
+    resolve(Response.json(approved));
+    await waitFor(() => expect(screen.queryByText("Awaiting approval")).toBeNull());
+  });
 });

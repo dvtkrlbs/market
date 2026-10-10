@@ -1,5 +1,12 @@
 import { queryOptions, useQuery } from "@tanstack/react-query";
-import { ApiConfigurationError, createStore, listStores, whoami, type ListStoresFor } from "./api";
+import {
+  ApiConfigurationError,
+  approveStore,
+  createStore,
+  listStores,
+  whoami,
+  type ListStoresFor,
+} from "./api";
 
 export class StoreRequestError extends Error {
   constructor(
@@ -60,5 +67,11 @@ export function useStores(mode: ListStoresFor) {
 export async function applyForStore(userId: number, name: string) {
   const response = await createStore(userId, { name: name.trim() });
   if (response.status !== 201) throw new StoreRequestError(response.data.message, response.status);
+  return response.data;
+}
+
+export async function approveStoreApplication(storeId: number) {
+  const response = await approveStore(storeId);
+  if (response.status !== 200) throw new StoreRequestError(response.data.message, response.status);
   return response.data;
 }

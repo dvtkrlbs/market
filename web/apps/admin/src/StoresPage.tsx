@@ -13,6 +13,7 @@ import {
 import { useState } from "react";
 import { type Store } from "shared/api";
 import { storeErrorMessage, useStores } from "shared/stores";
+import { ApproveStoreButton } from "./ApproveStoreButton";
 
 const features = tableFeatures({
   rowSortingFeature,
@@ -26,6 +27,12 @@ const columns: ColumnDef<typeof features, Store>[] = [
     accessorKey: "approved",
     header: "Status",
     cell: ({ row }) => (row.original.approved ? "Approved" : "Awaiting approval"),
+  },
+  {
+    id: "actions",
+    header: "Actions",
+    enableSorting: false,
+    cell: ({ row }) => <ApproveStoreButton store={row.original} />,
   },
 ];
 const emptyStores: Store[] = [];
@@ -69,17 +76,23 @@ export function StoresPage() {
                           ? "ascending"
                           : header.column.getIsSorted() === "desc"
                             ? "descending"
-                            : "none"
+                            : header.column.getCanSort()
+                              ? "none"
+                              : undefined
                       }
                     >
-                      <button type="button" onClick={header.column.getToggleSortingHandler()}>
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                        {header.column.getIsSorted() === "asc"
-                          ? " ↑"
-                          : header.column.getIsSorted() === "desc"
-                            ? " ↓"
-                            : ""}
-                      </button>
+                      {header.column.getCanSort() ? (
+                        <button type="button" onClick={header.column.getToggleSortingHandler()}>
+                          {flexRender(header.column.columnDef.header, header.getContext())}
+                          {header.column.getIsSorted() === "asc"
+                            ? " ↑"
+                            : header.column.getIsSorted() === "desc"
+                              ? " ↓"
+                              : ""}
+                        </button>
+                      ) : (
+                        flexRender(header.column.columnDef.header, header.getContext())
+                      )}
                     </th>
                   ))}
                 </tr>

@@ -115,6 +115,15 @@ func (s *Service) mutationError(ctx context.Context, storeID int) error {
 	return ErrForbidden
 }
 
+// Approve is called only after the API has verified global admin membership.
+func (s *Service) Approve(ctx context.Context, storeID int) (*ent.Store, error) {
+	item, err := s.client.Store.UpdateOneID(storeID).Where(store.DeletedAtIsNil()).SetApproved(true).Save(ctx)
+	if ent.IsNotFound(err) {
+		return nil, ErrNotFound
+	}
+	return item, err
+}
+
 func (s *Service) Delete(ctx context.Context, userID, storeID int) error {
 	// Preserve the store and its memberships; only admin listings include it.
 	count, err := s.client.Store.Update().Where(store.IDEQ(storeID), store.DeletedAtIsNil(), administeredBy(userID)).SetDeletedAt(time.Now()).Save(ctx)

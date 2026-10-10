@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/dvtkrlbs/market/internal/ent/admin"
 	"github.com/dvtkrlbs/market/internal/ent/predicate"
 	"github.com/dvtkrlbs/market/internal/ent/session"
 	"github.com/dvtkrlbs/market/internal/ent/storeadmin"
@@ -108,6 +109,25 @@ func (_u *UserUpdate) AddStoreAdmins(v ...*StoreAdmin) *UserUpdate {
 	return _u.AddStoreAdminIDs(ids...)
 }
 
+// SetAdminID sets the "admin" edge to the Admin entity by ID.
+func (_u *UserUpdate) SetAdminID(id int) *UserUpdate {
+	_u.mutation.SetAdminID(id)
+	return _u
+}
+
+// SetNillableAdminID sets the "admin" edge to the Admin entity by ID if the given value is not nil.
+func (_u *UserUpdate) SetNillableAdminID(id *int) *UserUpdate {
+	if id != nil {
+		_u = _u.SetAdminID(*id)
+	}
+	return _u
+}
+
+// SetAdmin sets the "admin" edge to the Admin entity.
+func (_u *UserUpdate) SetAdmin(v *Admin) *UserUpdate {
+	return _u.SetAdminID(v.ID)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (_u *UserUpdate) Mutation() *UserMutation {
 	return _u.mutation
@@ -153,6 +173,12 @@ func (_u *UserUpdate) RemoveStoreAdmins(v ...*StoreAdmin) *UserUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveStoreAdminIDs(ids...)
+}
+
+// ClearAdmin clears the "admin" edge to the Admin entity.
+func (_u *UserUpdate) ClearAdmin() *UserUpdate {
+	_u.mutation.ClearAdmin()
+	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -306,6 +332,35 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.AdminCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   user.AdminTable,
+			Columns: []string{user.AdminColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(admin.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.AdminIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   user.AdminTable,
+			Columns: []string{user.AdminColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(admin.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -404,6 +459,25 @@ func (_u *UserUpdateOne) AddStoreAdmins(v ...*StoreAdmin) *UserUpdateOne {
 	return _u.AddStoreAdminIDs(ids...)
 }
 
+// SetAdminID sets the "admin" edge to the Admin entity by ID.
+func (_u *UserUpdateOne) SetAdminID(id int) *UserUpdateOne {
+	_u.mutation.SetAdminID(id)
+	return _u
+}
+
+// SetNillableAdminID sets the "admin" edge to the Admin entity by ID if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableAdminID(id *int) *UserUpdateOne {
+	if id != nil {
+		_u = _u.SetAdminID(*id)
+	}
+	return _u
+}
+
+// SetAdmin sets the "admin" edge to the Admin entity.
+func (_u *UserUpdateOne) SetAdmin(v *Admin) *UserUpdateOne {
+	return _u.SetAdminID(v.ID)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (_u *UserUpdateOne) Mutation() *UserMutation {
 	return _u.mutation
@@ -449,6 +523,12 @@ func (_u *UserUpdateOne) RemoveStoreAdmins(v ...*StoreAdmin) *UserUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveStoreAdminIDs(ids...)
+}
+
+// ClearAdmin clears the "admin" edge to the Admin entity.
+func (_u *UserUpdateOne) ClearAdmin() *UserUpdateOne {
+	_u.mutation.ClearAdmin()
+	return _u
 }
 
 // Where appends a list predicates to the UserUpdate builder.
@@ -625,6 +705,35 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(storeadmin.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.AdminCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   user.AdminTable,
+			Columns: []string{user.AdminColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(admin.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.AdminIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   user.AdminTable,
+			Columns: []string{user.AdminColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(admin.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

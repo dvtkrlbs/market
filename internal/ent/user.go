@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/dvtkrlbs/market/internal/ent/admin"
 	"github.com/dvtkrlbs/market/internal/ent/user"
 )
 
@@ -37,9 +38,11 @@ type UserEdges struct {
 	Sessions []*Session `json:"sessions,omitempty"`
 	// StoreAdmins holds the value of the store_admins edge.
 	StoreAdmins []*StoreAdmin `json:"store_admins,omitempty"`
+	// Admin holds the value of the admin edge.
+	Admin *Admin `json:"admin,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // SessionsOrErr returns the Sessions value or an error if the edge
@@ -58,6 +61,17 @@ func (e UserEdges) StoreAdminsOrErr() ([]*StoreAdmin, error) {
 		return e.StoreAdmins, nil
 	}
 	return nil, &NotLoadedError{edge: "store_admins"}
+}
+
+// AdminOrErr returns the Admin value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e UserEdges) AdminOrErr() (*Admin, error) {
+	if e.Admin != nil {
+		return e.Admin, nil
+	} else if e.loadedTypes[2] {
+		return nil, &NotFoundError{label: admin.Label}
+	}
+	return nil, &NotLoadedError{edge: "admin"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -138,6 +152,11 @@ func (_m *User) QuerySessions() *SessionQuery {
 // QueryStoreAdmins queries the "store_admins" edge of the User entity.
 func (_m *User) QueryStoreAdmins() *StoreAdminQuery {
 	return NewUserClient(_m.config).QueryStoreAdmins(_m)
+}
+
+// QueryAdmin queries the "admin" edge of the User entity.
+func (_m *User) QueryAdmin() *AdminQuery {
+	return NewUserClient(_m.config).QueryAdmin(_m)
 }
 
 // Update returns a builder for updating this User.

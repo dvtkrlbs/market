@@ -86,7 +86,7 @@ export type BadRequestResponse = Error;
 export type StoreBadRequestResponse = Error;
 
 /**
- * User mismatch or store administration required
+ * User mismatch, store administration or global admin membership required
  */
 export type StoreForbiddenResponse = Error;
 
@@ -504,6 +504,62 @@ export const getOrdersPlaceholder = async (
   return { data, status: res.status, headers: res.headers } as getOrdersPlaceholderResponse;
 };
 
+export type approveStoreResponse200 = {
+  data: Store;
+  status: 200;
+};
+
+export type approveStoreResponse401 = {
+  data: StoreUnauthorizedResponse;
+  status: 401;
+};
+
+export type approveStoreResponse403 = {
+  data: StoreForbiddenResponse;
+  status: 403;
+};
+
+export type approveStoreResponse404 = {
+  data: StoreNotFoundResponse;
+  status: 404;
+};
+
+export type approveStoreResponseSuccess = approveStoreResponse200 & {
+  headers: Headers;
+};
+export type approveStoreResponseError = (
+  | approveStoreResponse401
+  | approveStoreResponse403
+  | approveStoreResponse404
+) & {
+  headers: Headers;
+};
+
+export type approveStoreResponse = approveStoreResponseSuccess | approveStoreResponseError;
+
+export const getApproveStoreUrl = (storeId: number) => {
+  return `${getApiBaseUrl()}/stores/${storeId}/approve`;
+};
+
+/**
+ * Approves a non-deleted store. Requires the authenticated user to be listed in the global admins table. Repeated approval is idempotent.
+ */
+export const approveStore = async (
+  storeId: number,
+  options?: RequestInit,
+): Promise<approveStoreResponse> => {
+  const res = await fetch(getApproveStoreUrl(storeId), {
+    credentials: "include",
+    ...options,
+    method: "POST",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: approveStoreResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as approveStoreResponse;
+};
+
 export type listStoresResponse200 = {
   data: Store[];
   status: 200;
@@ -797,7 +853,7 @@ export const getUpdateStoreUrl = (userId: number, storeId: number) => {
 };
 
 /**
- * Updates a store administered by the requesting user.
+ * Updates a store administered by the requesting user. Changing approval also requires global admin membership.
  */
 export const updateStore = async (
   userId: number,
