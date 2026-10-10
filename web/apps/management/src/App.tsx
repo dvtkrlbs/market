@@ -1,14 +1,19 @@
-import { Heading } from "@astryxdesign/core/Heading";
-import * as stylex from "@stylexjs/stylex";
-
-const styles = stylex.create({
-  heading: { padding: "var(--spacing-6)" },
-});
+import { Link, Outlet } from "@tanstack/react-router";
 
 export default function App() {
   return (
-    <Heading level={1} xstyle={styles.heading}>
-      Management
-    </Heading>
+    <>
+      <header className="app-header">
+        <nav aria-label="Management navigation">
+          <Link to="/" activeOptions={{ exact: true }}>
+            Home
+          </Link>
+          <Link to="/apply">Apply for a store</Link>
+        </nav>
+      </header>
+      <main className="app-main">
+        <Outlet />
+      </main>
+    </>
   );
 }

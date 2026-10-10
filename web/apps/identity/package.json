@@ -12,6 +12,7 @@
   "dependencies": {
     "@astryxdesign/core": "catalog:",
     "@stylexjs/stylex": "catalog:",
+    "@tanstack/react-form": "catalog:",
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-router": "catalog:",
     "react": "catalog:",

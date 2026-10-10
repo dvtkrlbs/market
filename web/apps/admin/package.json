@@ -12,11 +12,15 @@
   "dependencies": {
     "@astryxdesign/core": "catalog:",
     "@stylexjs/stylex": "catalog:",
+    "@tanstack/react-query": "catalog:",
+    "@tanstack/react-router": "catalog:",
+    "@tanstack/react-table": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "shared": "workspace:*"
   },
   "devDependencies": {
+    "@tanstack/router-plugin": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:"
   }

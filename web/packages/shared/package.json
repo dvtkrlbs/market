@@ -10,6 +10,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./api": "./src/api.ts",
+    "./stores": "./src/stores.ts",
     "./theme": "./src/theme.tsx",
     "./styles.css": "./src/styles.css"
   },
@@ -22,6 +23,7 @@
     "@astryxdesign/core": "catalog:",
     "@astryxdesign/theme-neutral": "catalog:",
     "@stylexjs/stylex": "catalog:",
+    "@tanstack/react-query": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:"
   },

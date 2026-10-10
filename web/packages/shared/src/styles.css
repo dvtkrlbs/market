@@ -5,3 +5,90 @@
 @import "@astryxdesign/theme-neutral/fonts.css";
 
 /* The Astryx Vite plugin compiles component styles into the astryx-base layer. */
+
+@layer product {
+  .app-header,
+  .app-main,
+  .sidebar {
+    padding: var(--spacing-6);
+  }
+  .app-header,
+  .sidebar {
+    border-bottom: 1px solid #ddd;
+  }
+  .app-header nav,
+  .form-stack {
+    display: flex;
+    gap: var(--spacing-4);
+  }
+  .form-stack {
+    flex-direction: column;
+  }
+  .page-form {
+    max-width: 36rem;
+  }
+  .admin-layout {
+    display: grid;
+    grid-template-columns: 15rem minmax(0, 1fr);
+    min-height: 100vh;
+  }
+  .sidebar {
+    border-right: 1px solid #ddd;
+  }
+  .sidebar nav {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+    margin-top: var(--spacing-6);
+  }
+  a[aria-current="page"] {
+    font-weight: bold;
+  }
+  .table-scroll {
+    overflow-x: auto;
+  }
+  .stores-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: var(--spacing-6);
+  }
+  .stores-table caption {
+    text-align: left;
+    margin-bottom: var(--spacing-4);
+  }
+  .stores-table th,
+  .stores-table td {
+    text-align: left;
+    padding: var(--spacing-4);
+    border-bottom: 1px solid #ddd;
+  }
+  .stores-table th button {
+    font: inherit;
+    font-weight: bold;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: inherit;
+  }
+  .store-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+    gap: var(--spacing-4);
+    list-style: none;
+    padding: 0;
+    margin-top: var(--spacing-6);
+  }
+  .store-card {
+    border: 1px solid #ddd;
+    border-radius: 0.5rem;
+    padding: var(--spacing-6);
+  }
+  @media (max-width: 640px) {
+    .admin-layout {
+      grid-template-columns: 1fr;
+    }
+    .sidebar {
+      border-right: none;
+    }
+  }
+}
